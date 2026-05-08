@@ -3,6 +3,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 :root {
   --background: oklch(0.98 0 0);
   --foreground: oklch(0.2 0 0);
@@ -16,14 +30,14 @@
   --secondary-foreground: oklch(0.98 0 0);
   --muted: oklch(0.9 0 0);
   --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.58 0.24 12);
+  --accent: oklch(0.55 0.25 180);
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.92 0 0);
   --input: oklch(0.95 0 0);
-  --ring: oklch(0.58 0.24 12);
-  --chart-1: oklch(0.58 0.24 12);
+  --ring: oklch(0.55 0.25 180);
+  --chart-1: oklch(0.55 0.25 180);
   --chart-2: oklch(0.4 0.08 200);
   --chart-3: oklch(0.35 0.06 220);
   --chart-4: oklch(0.5 0.1 250);
@@ -33,14 +47,15 @@
   --sidebar-foreground: oklch(0.2 0 0);
   --sidebar-primary: oklch(0.2 0 0);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.58 0.24 12);
+  --sidebar-accent: oklch(0.55 0.25 180);
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(0.92 0 0);
-  --sidebar-ring: oklch(0.58 0.24 12);
+  --sidebar-ring: oklch(0.55 0.25 180);
 }
 
 .dark {
-  --background: oklch(0.1 0 0);
+  --background: linear-gradient(-45deg, #001a4d, #0033cc, #003d99, #001a4d);
+  --background-size: 400% 400%;
   --foreground: oklch(0.97 0 0);
   --card: oklch(0.13 0 0);
   --card-foreground: oklch(0.97 0 0);
@@ -52,26 +67,26 @@
   --secondary-foreground: oklch(0.97 0 0);
   --muted: oklch(0.25 0 0);
   --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.68 0.21 12);
+  --accent: oklch(0.65 0.22 170);
   --accent-foreground: oklch(0.1 0 0);
-  --destructive: oklch(0.68 0.21 12);
+  --destructive: oklch(0.65 0.20 0);
   --destructive-foreground: oklch(0.97 0 0);
   --border: oklch(0.22 0 0);
   --input: oklch(0.2 0 0);
-  --ring: oklch(0.68 0.21 12);
-  --chart-1: oklch(0.68 0.21 12);
-  --chart-2: oklch(0.5 0.12 200);
-  --chart-3: oklch(0.45 0.08 220);
-  --chart-4: oklch(0.6 0.15 250);
-  --chart-5: oklch(0.75 0.18 40);
+  --ring: oklch(0.65 0.22 170);
+  --chart-1: oklch(0.65 0.22 170);
+  --chart-2: oklch(0.5 0.15 200);
+  --chart-3: oklch(0.55 0.18 180);
+  --chart-4: oklch(0.6 0.20 160);
+  --chart-5: oklch(0.7 0.20 40);
   --sidebar: oklch(0.12 0 0);
   --sidebar-foreground: oklch(0.97 0 0);
-  --sidebar-primary: oklch(0.68 0.21 12);
+  --sidebar-primary: oklch(0.65 0.22 170);
   --sidebar-primary-foreground: oklch(0.1 0 0);
   --sidebar-accent: oklch(0.25 0 0);
   --sidebar-accent-foreground: oklch(0.97 0 0);
   --sidebar-border: oklch(0.22 0 0);
-  --sidebar-ring: oklch(0.68 0.21 12);
+  --sidebar-ring: oklch(0.65 0.22 170);
 }
 
 @theme inline {
@@ -119,7 +134,27 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    background: linear-gradient(-45deg, #001a4d 0%, #0033cc 25%, #003d99 50%, #001a4d 75%, #0033cc 100%);
+    background-size: 400% 400%;
+    animation: gradient-shift 15s ease infinite;
+    background-attachment: fixed;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: transparent;
+  }
+}
+
+/* Custom utility classes for content over gradient background */
+@layer components {
+  .bg-gradient-overlay {
+    @apply bg-black/30 backdrop-blur-sm;
+  }
+
+  .card-overlay {
+    @apply bg-slate-900/80 backdrop-blur-md;
   }
 }

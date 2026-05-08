@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Music, Mail, MapPin, Phone, Github, Twitter, Linkedin } from 'lucide-react';
+import { Music, Mail, MapPin, Phone, Github, Twitter, Linkedin, Facebook, Youtube, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-card">
+    <footer className="border-t border-border/20 card-overlay">
       <div className="max-w-7xl mx-auto px-4 py-16 sm:py-20">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
@@ -54,7 +54,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <MapPin className="w-4 h-4" />
-                <span>Ho Chi Minh City, Vietnam</span>
+                <span>Vietnam</span>
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="w-4 h-4" />
@@ -76,21 +76,21 @@ export function Footer() {
 
             {/* Social Icons */}
             <div className="flex items-center gap-3">
-              <Link href="#" className="w-10 h-10 rounded-lg bg-background hover:bg-accent/10 flex items-center justify-center transition-colors">
-                <Twitter className="w-5 h-5 text-muted-foreground hover:text-accent" />
+              <Link href="https://www.youtube.com/@zirectlabel" className="w-10 h-10 rounded-lg bg-slate-800/40 hover:bg-accent/10 flex items-center justify-center transition-colors">
+                <Youtube className="w-5 h-5 text-muted-foreground hover:text-accent" />
               </Link>
-              <Link href="#" className="w-10 h-10 rounded-lg bg-background hover:bg-accent/10 flex items-center justify-center transition-colors">
-                <Github className="w-5 h-5 text-muted-foreground hover:text-accent" />
+              <Link href="https://www.instagram.com/zirectlabel" className="w-10 h-10 rounded-lg bg-slate-800/40 hover:bg-accent/10 flex items-center justify-center transition-colors">
+                <Instagram className="w-5 h-5 text-muted-foreground hover:text-accent" />
               </Link>
-              <Link href="#" className="w-10 h-10 rounded-lg bg-background hover:bg-accent/10 flex items-center justify-center transition-colors">
-                <Linkedin className="w-5 h-5 text-muted-foreground hover:text-accent" />
+              <Link href="https://www.facebook.com/zirectlabel" className="w-10 h-10 rounded-lg bg-slate-800/40 hover:bg-accent/10 flex items-center justify-center transition-colors">
+                <Facebook className="w-5 h-5 text-muted-foreground hover:text-accent" />
               </Link>
             </div>
           </div>
 
           {/* Copyright */}
-          <div className="text-center text-sm text-muted-foreground pt-6 mt-6 border-t border-border/50">
-            <p>&copy; 2024 Zirect Label. All rights reserved.</p>
+          <div className="text-center text-sm text-muted-foreground pt-6 mt-6 border-t border-border/30">
+            <p>&copy; 2026 Zirect Label. All rights reserved.</p>
           </div>
         </div>
       </div>

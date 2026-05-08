@@ -27,8 +27,8 @@ const features = [
 
 export function AboutSection() {
   return (
-    <section id="about" className="py-20 sm:py-32 px-4 bg-card">
-      <div className="max-w-7xl mx-auto">
+    <section id="about" className="py-20 sm:py-32 px-4">
+      <div className="max-w-7xl mx-auto bg-gradient-overlay rounded-2xl p-8 md:p-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
           {/* Text Content */}
           <div className="space-y-6">
@@ -62,7 +62,7 @@ export function AboutSection() {
             {features.map((feature, idx) => {
               const Icon = feature.icon;
               return (
-                <div key={idx} className="space-y-3 p-6 bg-background rounded-lg border border-border hover:border-accent/40 transition-colors">
+                <div key={idx} className="space-y-3 p-6 card-overlay rounded-lg border border-border/30 hover:border-accent/40 transition-colors">
                   <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
                     <Icon className="w-6 h-6 text-accent" />
                   </div>

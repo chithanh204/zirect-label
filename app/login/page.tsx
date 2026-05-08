@@ -6,10 +6,11 @@ import { Music, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState<'artist' | 'admin'>('artist');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,17 +18,43 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    
-    // Simulate login - replace with actual API call
-    setTimeout(() => {
-      if (!email || !password) {
-        setError('Please fill in all fields');
-      } else {
-        // Redirect based on user type
-        window.location.href = userType === 'admin' ? '/admin' : '/artist';
+
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Login failed');
+        return;
       }
+
+      // Store token
+      if (data.data?.token) {
+        localStorage.setItem('authToken', data.data.token);
+      }
+
+      // Redirect based on user role from backend
+      const userRole = data.data?.user?.type;
+      if (userRole === 'admin') {
+        window.location.href = '/admin';
+      } else if (userRole === 'artist') {
+        window.location.href = '/artist';
+      } else {
+        setError('Invalid user role');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error(err);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -54,30 +81,6 @@ export default function LoginPage() {
               <p className="text-muted-foreground">Sign in to your Zirect Label account</p>
             </div>
 
-            {/* User Type Selection */}
-            <div className="grid grid-cols-2 gap-3 bg-card p-1 rounded-lg border border-border">
-              <button
-                onClick={() => setUserType('artist')}
-                className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
-                  userType === 'artist'
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Artist
-              </button>
-              <button
-                onClick={() => setUserType('admin')}
-                className={`py-2 px-3 rounded-md font-medium text-sm transition-all ${
-                  userType === 'admin'
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Admin
-              </button>
-            </div>
-
             {/* Error Message */}
             {error && (
               <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 flex gap-3">
@@ -96,6 +99,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="bg-card"
+                  required
                 />
               </div>
 
@@ -107,6 +111,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="bg-card"
+                  required
                 />
               </div>
 
@@ -126,23 +131,6 @@ export default function LoginPage() {
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
-
-            {/* Demo Credentials */}
-            <div className="bg-card border border-border rounded-lg p-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Demo Credentials (Testing):</p>
-              <div className="space-y-1">
-                <p className="text-xs">
-                  <span className="text-foreground font-mono">artist@zirect.com</span>
-                  <span className="text-muted-foreground"> / </span>
-                  <span className="text-foreground font-mono">password123</span>
-                </p>
-                <p className="text-xs">
-                  <span className="text-foreground font-mono">admin@zirect.com</span>
-                  <span className="text-muted-foreground"> / </span>
-                  <span className="text-foreground font-mono">admin123</span>
-                </p>
-              </div>
-            </div>
 
             {/* Back Link */}
             <div className="text-center">

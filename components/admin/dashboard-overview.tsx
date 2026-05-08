@@ -107,12 +107,11 @@ export function AdminDashboardOverview() {
                     <p className="text-sm text-muted-foreground truncate">{activity.title}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className={`text-xs font-bold px-2 py-1 rounded ${
-                      activity.status === 'distributed' ? 'bg-green-500/20 text-green-500' :
-                      activity.status === 'pending_review' ? 'bg-yellow-500/20 text-yellow-500' :
-                      activity.status === 'rejected' ? 'bg-red-500/20 text-red-500' :
-                      'bg-blue-500/20 text-blue-500'
-                    }`}>
+                    <p className={`text-xs font-bold px-2 py-1 rounded ${activity.status === 'distributed' ? 'bg-green-500/20 text-green-500' :
+                        activity.status === 'pending_review' ? 'bg-yellow-500/20 text-yellow-500' :
+                          activity.status === 'rejected' ? 'bg-red-500/20 text-red-500' :
+                            'bg-blue-500/20 text-blue-500'
+                      }`}>
                       {activity.status.replace(/_/g, ' ').toUpperCase()}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">{activity.timestamp}</p>

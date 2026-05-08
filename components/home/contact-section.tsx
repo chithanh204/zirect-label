@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 export function ContactSection() {
   return (
     <section id="contact" className="py-20 sm:py-32 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto bg-gradient-overlay rounded-2xl p-8 md:p-12">
         <div className="text-center mb-12">
           <h2 className="text-4xl sm:text-5xl font-bold tracking-tighter mb-4">
             Get in Touch
@@ -20,7 +20,7 @@ export function ContactSection() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* Contact Info Cards */}
-          <div className="bg-card border border-border rounded-lg p-6 hover:border-accent/40 transition-colors">
+          <div className="card-overlay border border-border/30 rounded-lg p-6 hover:border-accent/40 transition-colors">
             <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
               <Mail className="w-6 h-6 text-accent" />
             </div>
@@ -28,7 +28,7 @@ export function ContactSection() {
             <p className="text-sm text-muted-foreground">hello@zirect.com</p>
           </div>
 
-          <div className="bg-card border border-border rounded-lg p-6 hover:border-accent/40 transition-colors">
+          <div className="card-overlay border border-border/30 rounded-lg p-6 hover:border-accent/40 transition-colors">
             <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
               <Phone className="w-6 h-6 text-accent" />
             </div>
@@ -36,7 +36,7 @@ export function ContactSection() {
             <p className="text-sm text-muted-foreground">+84 (123) 456-789</p>
           </div>
 
-          <div className="bg-card border border-border rounded-lg p-6 hover:border-accent/40 transition-colors">
+          <div className="card-overlay border border-border/30 rounded-lg p-6 hover:border-accent/40 transition-colors">
             <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
               <MapPin className="w-6 h-6 text-accent" />
             </div>
@@ -46,29 +46,29 @@ export function ContactSection() {
         </div>
 
         {/* Contact Form */}
-        <div className="bg-card border border-border rounded-lg p-8 sm:p-10">
+        <div className="card-overlay border border-border/30 rounded-lg p-8 sm:p-10">
           <form className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Your Name</label>
-                <Input placeholder="John Doe" className="bg-background" />
+                <Input placeholder="John Doe" className="bg-slate-800/50 border-border/30" />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Email Address</label>
-                <Input type="email" placeholder="john@example.com" className="bg-background" />
+                <Input type="email" placeholder="john@example.com" className="bg-slate-800/50 border-border/30" />
               </div>
             </div>
 
             <div>
               <label className="text-sm font-medium mb-2 block">Subject</label>
-              <Input placeholder="How can we help?" className="bg-background" />
+              <Input placeholder="How can we help?" className="bg-slate-800/50 border-border/30" />
             </div>
 
             <div>
               <label className="text-sm font-medium mb-2 block">Message</label>
-              <Textarea 
-                placeholder="Tell us more about your project..." 
-                className="bg-background min-h-32 resize-none"
+              <Textarea
+                placeholder="Tell us more about your project..."
+                className="bg-slate-800/50 border-border/30 min-h-32 resize-none"
               />
             </div>
 

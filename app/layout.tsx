@@ -7,25 +7,25 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Zirect Label - Music Distribution & Artist Management',
+  title: 'Zirect Label',
   description: 'Professional music distribution and artist management platform. Discover featured releases, track analytics, and grow your music career with Zirect Label.',
   generator: 'v0.app',
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
+        url: '/zirect-icon.png',
         media: '(prefers-color-scheme: light)',
       },
       {
-        url: '/icon-dark-32x32.png',
+        url: '/zirect-icon.png',
         media: '(prefers-color-scheme: dark)',
       },
       {
-        url: '/icon.svg',
+        url: '/zirect-icon.png',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: '/zirect-icon.png',
   },
 }
 
@@ -36,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="font-sans antialiased bg-background text-foreground">
+      <body className="font-sans antialiased text-foreground min-h-screen">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
