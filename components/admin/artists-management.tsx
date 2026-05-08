@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, MoreVertical, Mail, X, ImageIcon, Copy, Check, Eye, EyeOff, KeyRound, RefreshCw, Loader2 } from 'lucide-react';
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 
 interface Artist {
@@ -20,14 +21,16 @@ interface Artist {
   status: string;
   joinedAt: string;
   createdAt: string;
+  paymentVerificationStatus?: string;
   _count?: {
     albums: number;
   };
 }
 
 export function ArtistsManagement() {
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(searchParams.get('action') === 'add-artist');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -139,6 +142,20 @@ export function ArtistsManagement() {
       setIsUploading(false);
     }
   }, []);
+
+  const handleVerifyPayment = async (artistId: string) => {
+    try {
+      const res = await apiClient.verifyPaymentInfo(artistId) as any;
+      if (res?.success) {
+        alert('Payment info verified successfully');
+        fetchArtists();
+      } else {
+        alert(res?.message || 'Failed to verify payment info');
+      }
+    } catch (error) {
+      alert('Error verifying payment info');
+    }
+  };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -508,6 +525,7 @@ export function ArtistsManagement() {
               <tr className="border-b border-border bg-background/50">
                 <th className="px-6 py-4 text-left text-sm font-bold">Artist Name</th>
                 <th className="px-6 py-4 text-left text-sm font-bold">Status</th>
+                <th className="px-6 py-4 text-left text-sm font-bold">Payment</th>
                 <th className="px-6 py-4 text-left text-sm font-bold">Total Streams</th>
                 <th className="px-6 py-4 text-left text-sm font-bold">Joined</th>
                 <th className="px-6 py-4 text-right text-sm font-bold">Actions</th>
@@ -516,14 +534,14 @@ export function ArtistsManagement() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                     <p className="text-sm text-muted-foreground mt-2">Loading artists...</p>
                   </td>
                 </tr>
               ) : fetchError ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <p className="text-sm text-red-500">{fetchError}</p>
                     <Button
                       variant="outline"
@@ -537,7 +555,7 @@ export function ArtistsManagement() {
                 </tr>
               ) : filteredArtists.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground">
                     {searchTerm ? 'No artists match your search' : 'No artists found'}
                   </td>
                 </tr>
@@ -579,6 +597,17 @@ export function ArtistsManagement() {
                         }`}>
                         {artist.status.toUpperCase()}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {artist.paymentVerificationStatus === 'verified' ? (
+                        <span className="text-green-500 font-medium flex items-center gap-1"><Check className="w-4 h-4" /> Verified</span>
+                      ) : artist.paymentVerificationStatus === 'pending' ? (
+                        <Button variant="outline" size="sm" className="h-7 text-xs border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10" onClick={() => handleVerifyPayment(artist.id)}>
+                          Verify Now
+                        </Button>
+                      ) : (
+                        <span className="text-red-500 font-medium flex items-center gap-1"><X className="w-4 h-4" /> Unverified</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-accent font-bold">
                       {artist.totalStreams >= 1000000

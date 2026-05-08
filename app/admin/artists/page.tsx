@@ -1,5 +1,6 @@
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { ArtistsManagement } from '@/components/admin/artists-management';
+import { Suspense } from 'react';
 
 export default function AdminArtistsPage() {
   return (
@@ -16,7 +17,9 @@ export default function AdminArtistsPage() {
             </div>
 
             {/* Content */}
-            <ArtistsManagement />
+            <Suspense fallback={<div>Loading...</div>}>
+              <ArtistsManagement />
+            </Suspense>
           </div>
         </div>
       </main>

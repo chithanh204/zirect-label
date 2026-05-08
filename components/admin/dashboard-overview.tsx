@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Users, Music, TrendingUp, DollarSign } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { apiClient } from '@/lib/api';
+import Link from 'next/link';
 
 interface DashboardStats {
   totalArtists: number;
@@ -67,6 +68,8 @@ export function AdminDashboardOverview() {
     return <div className="text-red-500 text-center py-8">{error}</div>;
   }
 
+  const totalStreams = stats?.totalStreams || 0;
+
   const dashboardStats = [
     {
       label: 'Total Artists',
@@ -84,14 +87,18 @@ export function AdminDashboardOverview() {
     },
     {
       label: 'Total Streams',
-      value: `${(stats?.totalStreams || 0) / 1000000}M`,
+      value: totalStreams >= 1000000 
+        ? `${(totalStreams / 1000000).toFixed(2)}M` 
+        : totalStreams >= 1000 
+          ? `${(totalStreams / 1000).toFixed(2)}K`
+          : totalStreams.toLocaleString(),
       icon: TrendingUp,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10'
     },
     {
       label: 'Total Revenue',
-      value: `$${(stats?.totalRevenue || 0) / 1000}K`,
+      value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stats?.totalRevenue || 0),
       icon: DollarSign,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-500/10'
@@ -157,9 +164,9 @@ export function AdminDashboardOverview() {
         <Card className="bg-card border-border p-6">
           <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
           <div className="space-y-3">
-            <button className="w-full px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors text-sm font-medium">
+            <Link href="/admin/artists?action=add-artist" className="block w-full text-center px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors text-sm font-medium">
               Add New Artist
-            </button>
+            </Link>
             <button className="w-full px-4 py-2 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors text-sm font-medium">
               Review Pending Albums
             </button>

@@ -59,7 +59,15 @@ export function ArtistSidebar() {
               <p className="text-xs text-muted-foreground mb-1">Logged in as</p>
               <p className="text-sm font-bold truncate">artist@zirect.com</p>
             </div>
-            <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = '/'}>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              onClick={() => {
+                localStorage.removeItem('authToken');
+                document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                window.location.href = '/login';
+              }}
+            >
               <LogOut className="w-4 h-4 mr-2" />
               Log Out
             </Button>

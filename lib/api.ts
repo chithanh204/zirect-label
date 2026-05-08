@@ -86,6 +86,14 @@ class APIClient {
     }
   }
 
+  async updatePassword(data: any, token?: string) {
+    return this.request('/auth/password', {
+      method: 'PUT',
+      body: data,
+      token,
+    });
+  }
+
   // ========== Albums ==========
   async getAllAlbums() {
     return this.request('/albums');
@@ -127,6 +135,62 @@ class APIClient {
     });
   }
 
+  async getAlbumDetail(id: string | number) {
+    return this.request(`/albums/${id}/detail`);
+  }
+
+  async addCollaborator(albumId: string | number, artistId: string, role: string, token?: string) {
+    return this.request(`/albums/${albumId}/collaborators`, {
+      method: 'POST',
+      body: { artistId, role },
+      token,
+    });
+  }
+
+  async removeCollaborator(albumId: string | number, artistId: string, token?: string) {
+    return this.request(`/albums/${albumId}/collaborators/${artistId}`, {
+      method: 'DELETE',
+      token,
+    });
+  }
+
+  async updateTrackPlatform(trackId: string, platform: string, data: { streams?: number, copyrightFlag?: boolean, url?: string }, token?: string) {
+    return this.request(`/albums/tracks/${trackId}/platforms`, {
+      method: 'PUT',
+      body: { platform, ...data },
+      token,
+    });
+  }
+
+  async getRevenueSplits(albumId: string | number) {
+    return this.request(`/albums/${albumId}/revenue-split`);
+  }
+
+  async updateRevenueSplits(albumId: string | number, splits: { artistId: string, percentage: number }[], token?: string) {
+    return this.request(`/albums/${albumId}/revenue-split`, {
+      method: 'PUT',
+      body: { splits },
+      token,
+    });
+  }
+
+  // ========== Platform Revenue & Payments ==========
+  async updatePlatformRevenue(albumId: string | number, platform: string, totalRevenue: number, token?: string) {
+    return this.request(`/albums/${albumId}/revenue/${platform}`, {
+      method: 'PUT',
+      body: { totalRevenue },
+      token,
+    });
+  }
+
+  async addPlatformPayment(albumId: string | number, platform: string, amount: number, note?: string, token?: string) {
+    return this.request(`/albums/${albumId}/payments/${platform}`, {
+      method: 'POST',
+      body: { amount, note },
+      token,
+    });
+  }
+
   // ========== Artists ==========
   async getAllArtists() {
     return this.request('/artists');
@@ -144,6 +208,13 @@ class APIClient {
     return this.request('/artists/profile/me', {
       method: 'PUT',
       body: data,
+      token,
+    });
+  }
+
+  async verifyPaymentInfo(id: string | number, token?: string) {
+    return this.request(`/artists/${id}/payment/verify`, {
+      method: 'PUT',
       token,
     });
   }

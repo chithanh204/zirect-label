@@ -5,11 +5,12 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, ChevronRight, Music, CheckCircle, AlertCircle, Clock, Loader2, X, ImageIcon, Check, Trash2 } from 'lucide-react';
 import { useState, useRef, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import { useAlbums } from '@/hooks/useApi';
 import { apiClient } from '@/lib/api';
 
 const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
-  draft: { label: 'Draft', icon: Clock, color: 'bg-gray-500/20 text-gray-400' },
+  draft: { label: 'Making cover art', icon: Clock, color: 'bg-gray-500/20 text-gray-400' },
   submitted: { label: 'Submitted', icon: Clock, color: 'bg-blue-500/20 text-blue-500' },
   approved: { label: 'Approved', icon: CheckCircle, color: 'bg-cyan-500/20 text-cyan-500' },
   delivering: { label: 'Delivering', icon: Clock, color: 'bg-purple-500/20 text-purple-500' },
@@ -473,9 +474,28 @@ export function AlbumsManagement() {
                       <td className="px-6 py-4">{album.artistName}</td>
                       <td className="px-6 py-4 font-mono text-sm">{album.upc || '—'}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${config.color}`}>
-                          {config.label}
-                        </span>
+                        <select
+                          className={`appearance-none cursor-pointer outline-none px-3 py-1 rounded-full text-xs font-bold text-center ${config.color}`}
+                          value={album.status}
+                          onChange={async (e) => {
+                            try {
+                              const res = await apiClient.updateAlbumStatus(album.id, e.target.value) as any;
+                              if (res?.success) {
+                                refetch();
+                              } else {
+                                alert(res?.message || 'Failed to update status');
+                              }
+                            } catch (err) {
+                              alert('Failed to update status');
+                            }
+                          }}
+                        >
+                          {Object.entries(statusConfig).map(([key, c]) => (
+                            <option key={key} value={key} className="text-foreground bg-background">
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-6 py-4">{album.tracks?.length || 0}</td>
                       <td className="px-6 py-4 text-accent font-bold">
@@ -486,9 +506,12 @@ export function AlbumsManagement() {
                             : album.totalStreams || 0}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-background transition-colors">
+                        <Link
+                          href={`/admin/albums/${album.id}`}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-background transition-colors"
+                        >
                           <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        </button>
+                        </Link>
                       </td>
                     </tr>
                   );
