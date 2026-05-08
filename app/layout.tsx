@@ -13,19 +13,19 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/zirect-icon.png',
+        url: '/black-zirect.png',
         media: '(prefers-color-scheme: light)',
       },
       {
-        url: '/zirect-icon.png',
+        url: '/white-zirect.png',
         media: '(prefers-color-scheme: dark)',
       },
       {
-        url: '/zirect-icon.png',
+        url: '/zirect-label.png',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/zirect-icon.png',
+    apple: '/zirect-label.png',
   },
 }
 

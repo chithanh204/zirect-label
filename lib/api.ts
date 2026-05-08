@@ -36,7 +36,7 @@ class APIClient {
       requestHeaders['Authorization'] = `Bearer ${token}`;
     } else {
       // Try to get token from localStorage
-      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
       if (storedToken) {
         requestHeaders['Authorization'] = `Bearer ${storedToken}`;
       }
@@ -82,7 +82,7 @@ class APIClient {
   async logout() {
     // Clear token from localStorage
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
     }
   }
 
@@ -119,6 +119,14 @@ class APIClient {
     return this.request('/albums/stats');
   }
 
+  async createAlbumAdmin(data: any, token?: string) {
+    return this.request('/albums/admin', {
+      method: 'POST',
+      body: data,
+      token,
+    });
+  }
+
   // ========== Artists ==========
   async getAllArtists() {
     return this.request('/artists');
@@ -153,6 +161,54 @@ class APIClient {
   // ========== Dashboard ==========
   async getDashboardData() {
     return this.request('/admin/dashboard');
+  }
+
+  // ========== Admin - Artists ==========
+  async createArtist(data: any, token?: string) {
+    return this.request('/artists', {
+      method: 'POST',
+      body: data,
+      token,
+    });
+  }
+
+  async resetArtistPassword(artistId: string, token?: string) {
+    return this.request(`/artists/${artistId}/reset-password`, {
+      method: 'POST',
+      token,
+    });
+  }
+
+  // ========== Upload ==========
+  async uploadImage(file: File, folder: string = 'zirect/avatars'): Promise<any> {
+    const url = `${this.baseURL}/upload/image?folder=${encodeURIComponent(folder)}`;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const headers: Record<string, string> = {};
+    const storedToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    if (storedToken) {
+      headers['Authorization'] = `Bearer ${storedToken}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Upload Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Upload Error:', error);
+      throw error;
+    }
   }
 }
 

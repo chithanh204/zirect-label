@@ -5,30 +5,35 @@ import { apiClient } from '@/lib/api';
  * Hook để fetch danh sách albums từ API
  */
 export function useAlbums() {
-  const [albums, setAlbums] = useState([]);
+  const [albums, setAlbums] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchAlbums = async () => {
-      try {
-        setLoading(true);
-        const data = await apiClient.getAllAlbums();
-        setAlbums(data as any);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching albums:', err);
-        setError(err instanceof Error ? err.message : 'Lỗi khi tải albums');
+  const fetchAlbums = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.getAllAlbums() as any;
+      // API returns { success, data: { albums: [...], total, ... } }
+      if (response && response.success && response.data) {
+        setAlbums(response.data.albums || []);
+      } else {
         setAlbums([]);
-      } finally {
-        setLoading(false);
       }
-    };
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching albums:', err);
+      setError(err instanceof Error ? err.message : 'Lỗi khi tải albums');
+      setAlbums([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAlbums();
   }, []);
 
-  return { albums, loading, error };
+  return { albums, loading, error, refetch: fetchAlbums };
 }
 
 /**
