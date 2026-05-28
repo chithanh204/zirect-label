@@ -54,20 +54,22 @@ class APIClient {
     try {
       const response = await fetch(url, config);
 
-      // Handle non-200 responses
+      // Handle non-200 responses gracefully – return { success: false } instead of throwing
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `API Error: ${response.status} ${response.statusText}`
-        );
+        const message = errorData.message || `API Error: ${response.status} ${response.statusText}`;
+        console.error(`API Request Error [${method} ${url}]:`, message);
+        return { success: false, message, status: response.status } as unknown as T;
       }
 
       // Parse and return JSON
       const data: T = await response.json();
       return data;
     } catch (error) {
-      console.error(`API Request Error [${method} ${url}]:`, error);
-      throw error;
+      // Network-level error (no connectivity, CORS, etc.)
+      const message = error instanceof Error ? error.message : 'Network error';
+      console.error(`API Network Error [${method} ${url}]:`, error);
+      return { success: false, message } as unknown as T;
     }
   }
 
@@ -173,6 +175,13 @@ class APIClient {
   async addTrack(albumId: string | number, token?: string) {
     return this.request(`/albums/${albumId}/tracks`, {
       method: 'POST',
+      token,
+    });
+  }
+
+  async deleteTrack(trackId: string, token?: string) {
+    return this.request(`/albums/tracks/${trackId}`, {
+      method: 'DELETE',
       token,
     });
   }

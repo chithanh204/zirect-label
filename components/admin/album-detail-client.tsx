@@ -66,9 +66,7 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
 
   // Edit Album State
   const [isEditAlbumOpen, setIsEditAlbumOpen] = useState(false);
-  const [isEditTracksOpen, setIsEditTracksOpen] = useState(false);
   const [editAlbumForm, setEditAlbumForm] = useState<any>({});
-  const [editTracksData, setEditTracksData] = useState<any[]>([]);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [metadataValidation, setMetadataValidation] = useState<{ hasWarnings: boolean; warnings: string[] }>({ hasWarnings: false, warnings: [] });
 
@@ -83,10 +81,7 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
   const [editingTrackId, setEditingTrackId] = useState<string | null>(null);
   const [editTrackForm, setEditTrackForm] = useState<any>({});
   const [isTrackEditSubmitting, setIsTrackEditSubmitting] = useState(false);
-
-  // Revenue Batch Accumulation State
-  const [revBatchAmount, setRevBatchAmount] = useState<string>('');
-  const [isAccumulating, setIsAccumulating] = useState(false);
+  const editTrackSourceRef = useRef<'main' | 'modal'>('modal');
 
   // Track Selectors States
   const [trackPrimaryArtists, setTrackPrimaryArtists] = useState<Array<{ type: 'system' | 'custom'; id: string; name: string }>>([]);
@@ -117,16 +112,10 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
   const [paymentSummary, setPaymentSummary] = useState<any>(null);
   const [paymentSummaryLoading, setPaymentSummaryLoading] = useState(false);
 
-  // Record Payment Dialog State
-  const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
-  const [recordPaymentForm, setRecordPaymentForm] = useState({
-    artistId: '',
-    artistName: '',
-    amount: 0,
-    paypalAccount: '',
-    outstandingBalance: 0,
-  });
-  const [isRecordPaymentSubmitting, setIsRecordPaymentSubmitting] = useState(false);
+  // New States for Inline Admin Actions
+  const [editingArtistId, setEditingArtistId] = useState<string | null>(null);
+  const [editArtistForm, setEditArtistForm] = useState({ email: '', paypalAccount: '' });
+  const [isSavingArtistInfo, setIsSavingArtistInfo] = useState(false);
 
   useEffect(() => {
     fetchAlbumDetail();
@@ -228,6 +217,75 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
     });
   };
 
+  const updateEditPrimaryArtistItem = (index: number, type: 'system' | 'custom', value: string) => {
+    if (type === 'system' && value) {
+      const isDuplicate = editPrimaryArtists.some((a, i) => i !== index && a.type === 'system' && a.id === value);
+      if (isDuplicate) {
+        const sysArtist = allArtists.find((a: any) => a.id === value || a._id === value);
+        alert(`Nghệ sĩ "${sysArtist ? sysArtist.name : ''}" đã được chọn làm Primary Artist! Vui lòng không chọn trùng.`);
+        setEditPrimaryArtists(prev => {
+          const next = [...prev];
+          next[index] = { type: 'system', id: '', name: '' };
+          return next;
+        });
+        return;
+      }
+    }
+    setEditPrimaryArtists(prev => {
+      const next = [...prev];
+      if (type === 'system') {
+        const sysArtist = allArtists.find((a: any) => a.id === value || a._id === value);
+        next[index] = {
+          type: 'system',
+          id: value,
+          name: sysArtist ? sysArtist.name : '',
+        };
+      } else {
+        next[index] = {
+          type: 'custom',
+          id: '',
+          name: value,
+        };
+      }
+      return next;
+    });
+  };
+
+  const updateEditFeaturingArtistItem = (index: number, type: 'system' | 'custom', value: string) => {
+    if (type === 'system' && value) {
+      const isDuplicate = editFeaturingArtists.some((a, i) => i !== index && a.type === 'system' && a.id === value);
+      if (isDuplicate) {
+        const sysArtist = allArtists.find((a: any) => a.id === value || a._id === value);
+        alert(`Nghệ sĩ "${sysArtist ? sysArtist.name : ''}" đã được chọn làm Featuring Artist! Vui lòng không chọn trùng.`);
+        setEditFeaturingArtists(prev => {
+          const next = [...prev];
+          next[index] = { type: 'system', id: '', name: '' };
+          return next;
+        });
+        return;
+      }
+    }
+    setEditFeaturingArtists(prev => {
+      const next = [...prev];
+      if (type === 'system') {
+        const sysArtist = allArtists.find((a: any) => a.id === value || a._id === value);
+        next[index] = {
+          type: 'system',
+          id: value,
+          name: sysArtist ? sysArtist.name : '',
+        };
+      } else {
+        next[index] = {
+          type: 'custom',
+          id: '',
+          name: value,
+        };
+      }
+      return next;
+    });
+  };
+
+
   const renderArtistSelectors = (
     label: string,
     list: Array<{ type: 'system' | 'custom'; id: string; name: string }>,
@@ -322,99 +380,55 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
     }
   };
 
-  const handleAccumulateRevenue = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amount = parseFloat(revBatchAmount);
-    if (isNaN(amount) || amount <= 0) {
-      alert('Vui lòng nhập số tiền hợp lệ và lớn hơn 0.');
-      return;
-    }
-
-    setIsAccumulating(true);
+  const handleDeleteTrack = async (trackId: string) => {
+    if (!confirm('Are you sure you want to delete this track?')) return;
     try {
-      const res = await apiClient.accumulateRevenue(albumId, amount) as any;
+      const res = await apiClient.deleteTrack(trackId) as any;
       if (res?.success) {
-        alert('Đã cộng thêm doanh thu thành công!');
-        setRevBatchAmount('');
+        alert('Track deleted successfully!');
         fetchAlbumDetail();
-        fetchPaymentSummary();
       } else {
-        alert(res?.message || 'Không thể cập nhật doanh thu');
+        alert(res?.message || 'Failed to delete track');
       }
     } catch (err: any) {
-      alert(err.message || 'Lỗi khi cập nhật doanh thu');
+      alert(err.message || 'Error deleting track');
+    }
+  };
+
+  const handleStartEditArtist = (artistSummary: any) => {
+    setEditingArtistId(artistSummary.artistId);
+    setEditArtistForm({
+      email: artistSummary.email || '',
+      paypalAccount: artistSummary.paypalAccount || '',
+    });
+  };
+
+  const handleSaveArtistInfo = async (artistId: string) => {
+    if (!editArtistForm.email) {
+      alert('Email là bắt buộc.');
+      return;
+    }
+    setIsSavingArtistInfo(true);
+    try {
+      const res = await apiClient.updateArtistAdmin(artistId, {
+        email: editArtistForm.email,
+        paypalAccount: editArtistForm.paypalAccount,
+      }) as any;
+      if (res?.success) {
+        alert('Cập nhật thông tin thanh toán thành công!');
+        setEditingArtistId(null);
+        fetchPaymentSummary();
+      } else {
+        alert(res?.message || 'Cập nhật thất bại');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Lỗi khi cập nhật thông tin');
     } finally {
-      setIsAccumulating(false);
+      setIsSavingArtistInfo(false);
     }
   };
 
-  const updateEditPrimaryArtistItem = (index: number, type: 'system' | 'custom', value: string) => {
-    if (type === 'system' && value) {
-      const isDuplicate = editPrimaryArtists.some((a, i) => i !== index && a.type === 'system' && a.id == value);
-      if (isDuplicate) {
-        const sysArtist = allArtists.find((a: any) => a.id == value || a._id == value);
-        alert(`Nghệ sĩ "${sysArtist ? sysArtist.name : ''}" đã được chọn làm Primary Artist! Vui lòng không chọn trùng.`);
-        setEditPrimaryArtists(prev => {
-          const next = [...prev];
-          next[index] = { type: 'system', id: '', name: '' };
-          return next;
-        });
-        return;
-      }
-    }
-    setEditPrimaryArtists(prev => {
-      const next = [...prev];
-      if (type === 'system') {
-        const sysArtist = allArtists.find((a: any) => a.id == value || a._id == value);
-        next[index] = {
-          type: 'system',
-          id: value,
-          name: sysArtist ? sysArtist.name : '',
-        };
-      } else {
-        next[index] = {
-          type: 'custom',
-          id: '',
-          name: value,
-        };
-      }
-      return next;
-    });
-  };
 
-  const updateEditFeaturingArtistItem = (index: number, type: 'system' | 'custom', value: string) => {
-    if (type === 'system' && value) {
-      const isDuplicate = editFeaturingArtists.some((a, i) => i !== index && a.type === 'system' && a.id == value);
-      if (isDuplicate) {
-        const sysArtist = allArtists.find((a: any) => a.id == value || a._id == value);
-        alert(`Nghệ sĩ "${sysArtist ? sysArtist.name : ''}" đã được chọn làm Featuring Artist! Vui lòng không chọn trùng.`);
-        setEditFeaturingArtists(prev => {
-          const next = [...prev];
-          next[index] = { type: 'system', id: '', name: '' };
-          return next;
-        });
-        return;
-      }
-    }
-    setEditFeaturingArtists(prev => {
-      const next = [...prev];
-      if (type === 'system') {
-        const sysArtist = allArtists.find((a: any) => a.id == value || a._id == value);
-        next[index] = {
-          type: 'system',
-          id: value,
-          name: sysArtist ? sysArtist.name : '',
-        };
-      } else {
-        next[index] = {
-          type: 'custom',
-          id: '',
-          name: value,
-        };
-      }
-      return next;
-    });
-  };
 
   const fetchPaymentSummary = async () => {
     try {
@@ -432,94 +446,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
       console.error('Error fetching payment summary:', err);
     } finally {
       setPaymentSummaryLoading(false);
-    }
-  };
-
-  const handleOpenRecordPayment = (artistSummary: any) => {
-    if (!artistSummary.isSystem) {
-      alert("Lưu ý: Chỉ hỗ trợ thanh toán cho nghệ sĩ có tài khoản hệ thống.");
-      return;
-    }
-    setRecordPaymentForm({
-      artistId: artistSummary.artistId || '',
-      artistName: artistSummary.name,
-      amount: Math.max(0, artistSummary.totalUnpaid),
-      paypalAccount: artistSummary.paypalAccount || '',
-      outstandingBalance: artistSummary.totalUnpaid || 0,
-    });
-    setIsRecordPaymentOpen(true);
-  };
-
-  const handleOpenRecordPaymentGeneral = () => {
-    const firstSystem = paymentSummary?.artists?.find((a: any) => a.isSystem);
-    if (firstSystem) {
-      setRecordPaymentForm({
-        artistId: firstSystem.artistId || '',
-        artistName: firstSystem.name,
-        amount: Math.max(0, firstSystem.totalUnpaid),
-        paypalAccount: firstSystem.paypalAccount || '',
-        outstandingBalance: firstSystem.totalUnpaid || 0,
-      });
-    } else {
-      setRecordPaymentForm({
-        artistId: '',
-        artistName: '',
-        amount: 0,
-        paypalAccount: '',
-        outstandingBalance: 0,
-      });
-    }
-    setIsRecordPaymentOpen(true);
-  };
-
-  const handleRecordPaymentArtistChange = (artistId: string) => {
-    const artistSummary = paymentSummary?.artists?.find((a: any) => a.artistId === artistId);
-    if (artistSummary) {
-      setRecordPaymentForm({
-        artistId: artistSummary.artistId || '',
-        artistName: artistSummary.name,
-        amount: Math.max(0, artistSummary.totalUnpaid),
-        paypalAccount: artistSummary.paypalAccount || '',
-        outstandingBalance: artistSummary.totalUnpaid || 0,
-      });
-    }
-  };
-
-  const handleRecordPaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!recordPaymentForm.artistId) {
-      alert('Vui lòng chọn nghệ sĩ.');
-      return;
-    }
-    if (recordPaymentForm.amount <= 0) {
-      alert('Số tiền thanh toán phải lớn hơn 0.');
-      return;
-    }
-    if (recordPaymentForm.amount > recordPaymentForm.outstandingBalance) {
-      if (!confirm(`Cảnh báo: Số tiền thanh toán ($${recordPaymentForm.amount}) vượt quá số dư chưa thanh toán của nghệ sĩ ($${recordPaymentForm.outstandingBalance}). Bạn có chắc chắn muốn tiếp tục?`)) {
-        return;
-      }
-    }
-
-    setIsRecordPaymentSubmitting(true);
-    try {
-      const res = await apiClient.addAlbumPaymentLog(albumId, {
-        artistId: recordPaymentForm.artistId,
-        amount: recordPaymentForm.amount,
-        paypalAccount: recordPaymentForm.paypalAccount,
-      }) as any;
-
-      if (res?.success) {
-        alert('Đã ghi nhận thanh toán thành công!');
-        setIsRecordPaymentOpen(false);
-        fetchPaymentSummary();
-      } else {
-        alert(res?.message || 'Ghi nhận thanh toán thất bại');
-      }
-    } catch (err: any) {
-      alert(err.message || 'Lỗi khi ghi nhận thanh toán');
-    } finally {
-      setIsRecordPaymentSubmitting(false);
     }
   };
 
@@ -547,8 +473,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
           genre: res.data.genre || '',
           subgenre: res.data.subgenre || '',
         });
-        // Initialize edit tracks data
-        setEditTracksData(res.data.tracks || []);
         // Initialize splits for UI editing
         if (res.data.revenueSplits) {
           setSplits(res.data.revenueSplits.map((s: any) => ({ artistId: s.artistId, percentage: s.percentage })));
@@ -651,7 +575,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
     }
     setEditFeaturingArtists(parsedFeaturing);
 
-    setEditTracksData(album.tracks || []);
     setIsEditAlbumOpen(true);
   };
 
@@ -802,7 +725,8 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
     }
   };
 
-  const handleOpenEditTrack = (track: any) => {
+  const handleOpenEditTrack = (track: any, source: 'main' | 'modal' = 'modal') => {
+    editTrackSourceRef.current = source;
     setEditingTrackId(track.id);
     setEditTrackForm({
       title: track.title,
@@ -883,10 +807,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
       const res = await apiClient.updateTrackMetadata(editingTrackId, fallbackData) as any;
 
       if (res?.success) {
-        // Update local state to reflect saved data
-        setEditTracksData(prev =>
-          prev.map(t => t.id === editingTrackId ? { ...t, ...fallbackData } : t)
-        );
         setIsEditTrackOpen(false);
         fetchAlbumDetail();
         fetchPaymentSummary();
@@ -1136,13 +1056,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
               </div>
               <div className="flex gap-2">
                 <Button
-                  onClick={() => { setEditTracksData(album.tracks || []); setIsEditTracksOpen(true); }}
-                  variant="outline"
-                  className="border-accent/40 text-accent hover:bg-accent/10"
-                >
-                  <Music className="w-4 h-4 mr-2" /> Edit Tracks
-                </Button>
-                <Button
                   onClick={handleOpenEditAlbum}
                   className="bg-accent hover:bg-accent/90 text-accent-foreground"
                 >
@@ -1228,10 +1141,15 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
 
             {/* Tracks Table */}
             <div className="mt-8">
-              <h4 className="font-bold mb-4 flex items-center gap-2 text-accent">
-                <span className="text-accent">●</span> Tracks ({album.tracks?.length || 0})
-                <span className="text-xs font-normal text-muted-foreground italic">(Click a row to inspect & copy all metadata fields)</span>
-              </h4>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold flex items-center gap-2 text-accent m-0">
+                  <span className="text-accent">●</span> Tracks ({album.tracks?.length || 0})
+                  <span className="text-xs font-normal text-muted-foreground italic">(Click a row to inspect & copy all metadata fields)</span>
+                </h4>
+                <Button onClick={handleAddTrack} size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground text-xs h-8">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add New Track
+                </Button>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead className="bg-background/50 border-b border-border">
@@ -1262,10 +1180,7 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
                             </td>
                             <td className="px-4 py-3 font-mono text-xs">
                               {track.isrc ? (
-                                <div className="flex items-center gap-1">
-                                  <span>{track.isrc}</span>
-                                  <CopyButton value={track.isrc} label="ISRC" />
-                                </div>
+                                <CopyButton value={track.isrc} label="ISRC" />
                               ) : '—'}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground truncate max-w-[150px]" title={track.primaryArtists}>
@@ -1278,18 +1193,44 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">{track.genre || '—'}</td>
                             <td className="px-4 py-3 text-center">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs text-accent hover:text-accent-foreground hover:bg-accent/20 h-7 px-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setExpandedTrackId(isExpanded ? null : track.id);
-                                }}
-                              >
-                                {isExpanded ? 'Hide Details' : 'View Details'}
-                              </Button>
+                              <div className="flex items-center justify-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs text-accent hover:text-accent-foreground hover:bg-accent/20 h-7 px-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenEditTrack(track, 'main');
+                                  }}
+                                >
+                                  <Edit2 className="w-3 h-3 mr-1" /> Edit
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 px-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteTrack(track.id);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" /> Delete
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs text-accent hover:text-accent-foreground hover:bg-accent/20 h-7 px-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedTrackId(isExpanded ? null : track.id);
+                                  }}
+                                >
+                                  {isExpanded ? 'Hide Details' : 'View Details'}
+                                </Button>
+                              </div>
                             </td>
                           </tr>
 
@@ -1298,13 +1239,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
                             <tr key={`${track.id}-details`} className="bg-accent/5">
                               <td colSpan={7} className="px-6 py-5 border-l-2 border-accent">
                                 <div className="space-y-4">
-                                  <div className="flex items-center justify-between border-b border-accent/15 pb-2">
-                                    <h5 className="font-bold text-accent text-sm flex items-center gap-1.5">
-                                      <Music className="w-4 h-4" /> Complete Track Metadata
-                                    </h5>
-                                    <span className="text-xs text-muted-foreground font-mono">ID: {track.id}</span>
-                                  </div>
-
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
                                     {/* Column 1: Core Fields */}
                                     <div className="space-y-2.5">
@@ -1392,34 +1326,16 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
         <div className="space-y-6">
           {/* Outstanding Cards Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="glass-card p-6 flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Total Album Revenue</p>
-                  <h3 className="text-3xl font-extrabold text-foreground">
-                    ${(paymentSummary?.totalRevenue || album.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </h3>
-                </div>
-                <div className="p-3 bg-accent/10 text-accent rounded-xl">
-                  <DollarSign className="w-6 h-6" />
-                </div>
+            <Card className="glass-card p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Total Album Revenue</p>
+                <h3 className="text-3xl font-extrabold text-foreground">
+                  ${(paymentSummary?.totalRevenue || album.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </h3>
               </div>
-              <form onSubmit={handleAccumulateRevenue} className="flex gap-2 border-t border-border/40 pt-3 mt-1">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="Batch Amount..."
-                  value={revBatchAmount}
-                  onChange={(e) => setRevBatchAmount(e.target.value)}
-                  className="flex-1 bg-background/50 border border-border rounded px-2.5 py-1.5 text-xs font-semibold focus:ring-1 focus:ring-accent focus:outline-none"
-                  disabled={isAccumulating}
-                />
-                <Button type="submit" size="sm" className="bg-accent text-accent-foreground text-xs hover:bg-accent/90" disabled={isAccumulating}>
-                  {isAccumulating ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Plus className="w-3 h-3 mr-1" />}
-                  Import Batch
-                </Button>
-              </form>
+              <div className="p-3 bg-accent/10 text-accent rounded-xl">
+                <DollarSign className="w-6 h-6" />
+              </div>
             </Card>
 
             <Card className="glass-card p-6 flex items-center justify-between">
@@ -1447,247 +1363,230 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
             </Card>
           </div>
 
-          {/* Grid Splitter: Left Column (Splits) & Right Column (Payouts) */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-            {/* Left Column: Revenue Splits Manager */}
-            <Card className="glass-card p-6 flex flex-col justify-between">
+          {/* Unified Revenue Splits & Payouts Manager */}
+          <Card className="glass-card p-6">
+            <div className="flex justify-between items-center mb-6">
               <div>
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="font-bold text-lg">Revenue Splits</h3>
-                    <p className="text-sm text-muted-foreground">Distribute revenue percentages among involved system artists.</p>
-                  </div>
-                  <Button onClick={handleSaveSplits} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Check className="w-4 h-4 mr-2" /> Save Splits
-                  </Button>
-                </div>
+                <h3 className="font-bold text-lg">Revenue Splits & Payout Management</h3>
+                <p className="text-sm text-muted-foreground">Set each artist's revenue split percentage and update their payment details.</p>
+              </div>
+              <Button onClick={handleSaveSplits} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                <Check className="w-4 h-4 mr-2" /> Save Splits
+              </Button>
+            </div>
 
-                {/* Visual Preview Bar */}
-                <div className="mb-6">
-                  <div className="flex h-6 rounded-full overflow-hidden bg-background border border-border mb-2">
-                    {splits.map((split, idx) => {
-                      const colors = ['bg-accent', 'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500'];
-                      return (
-                        <div
-                          key={split.artistId}
-                          style={{ width: `${split.percentage}%` }}
-                          className={`${colors[idx % colors.length]} transition-all duration-300`}
-                          title={`${split.percentage}%`}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-muted-foreground">0%</span>
-                    <span className={splits.reduce((a, b) => a + b.percentage, 0) === 100 ? "text-green-500" : "text-red-500"}>
-                      Total: {splits.reduce((a, b) => a + b.percentage, 0).toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
+            {/* Visual Splits Preview Bar */}
+            <div className="mb-6 bg-background/30 p-4 border border-border/50 rounded-xl">
+              <div className="flex h-6 rounded-full overflow-hidden bg-background border border-border mb-2">
+                {splits.map((split, idx) => {
+                  const artistName = paymentSummary?.artists?.find((a: any) => a.artistId === split.artistId)?.name || 'Artist';
+                  const colors = ['bg-accent', 'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500'];
+                  return (
+                    <div
+                      key={split.artistId}
+                      style={{ width: `${split.percentage}%` }}
+                      className={`${colors[idx % colors.length]} transition-all duration-300`}
+                      title={`${artistName}: ${split.percentage}%`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-muted-foreground">0%</span>
+                <span className={splits.reduce((a, b) => a + b.percentage, 0) === 100 ? "text-green-500" : "text-red-500"}>
+                  Total: {splits.reduce((a, b) => a + b.percentage, 0).toFixed(1)}% / 100%
+                </span>
+              </div>
+            </div>
 
-                {/* Splits Inputs */}
-                <div className="space-y-4">
-                  {involvedArtists.map((artist, idx) => {
-                    const currentSplit = splits.find(s => s.artistId === artist.id)?.percentage || 0;
-                    const colors = ['text-accent', 'text-purple-500', 'text-blue-500', 'text-green-500', 'text-yellow-500'];
+            {/* Single Streamlined Unified Table */}
+            <div className="overflow-x-auto border border-border rounded-xl">
+              <table className="w-full text-sm">
+                <thead className="bg-accent/5 border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3.5 text-left font-bold text-muted-foreground text-xs uppercase tracking-wider">Artist / Role</th>
+                    <th className="px-4 py-3.5 text-left font-bold text-muted-foreground text-xs uppercase tracking-wider w-[240px]">Email</th>
+                    <th className="px-4 py-3.5 text-left font-bold text-muted-foreground text-xs uppercase tracking-wider w-[200px]">PayPal</th>
+                    <th className="px-4 py-3.5 text-center font-bold text-muted-foreground text-xs uppercase tracking-wider w-[120px]">% Split</th>
+                    <th className="px-4 py-3.5 text-right font-bold text-muted-foreground text-xs uppercase tracking-wider">Total Share</th>
+                    <th className="px-4 py-3.5 text-right font-bold text-muted-foreground text-xs uppercase tracking-wider">Total Paid</th>
+                    <th className="px-4 py-3.5 text-right font-bold text-muted-foreground text-xs uppercase tracking-wider">Outstanding</th>
+                    <th className="px-4 py-3.5 text-center font-bold text-muted-foreground text-xs uppercase tracking-wider w-[100px]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {paymentSummary?.artists?.map((artistSummary: any, idx: number) => {
+                    const outstanding = artistSummary.totalUnpaid || 0;
+                    const currentSplit = splits.find(s => s.artistId === artistSummary.artistId)?.percentage || 0;
+                    const isEditing = editingArtistId === artistSummary.artistId;
 
                     return (
-                      <div key={artist.id} className="flex items-center justify-between p-4 bg-background border border-border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-accent/20 flex-shrink-0 flex items-center justify-center">
-                            {artist.avatar ? (
-                              <img src={artist.avatar} alt="" className="w-full h-full object-cover" />
+                      <tr key={artistSummary.artistId} className="hover:bg-accent/5 transition-colors">
+                        {/* Name & Roles */}
+                        <td className="px-4 py-4">
+                          <div className="font-bold text-foreground text-sm flex items-center gap-2">
+                            <span>{artistSummary.name}</span>
+                            {artistSummary.isSystem && artistSummary.email && !artistSummary.email.startsWith('temp_') ? (
+                              <span className="text-[9px] font-bold bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded uppercase tracking-wider">System</span>
                             ) : (
-                              <span className="font-bold text-xs">{artist.name.charAt(0)}</span>
+                              <span className="text-[9px] font-bold bg-yellow-500/10 text-yellow-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Custom (Needs Update)</span>
                             )}
                           </div>
-                          <div>
-                            <p className="font-bold text-sm">{artist.name}</p>
+                          <div className="flex gap-1 mt-1.5 flex-wrap">
+                            {artistSummary.roles?.map((r: string) => (
+                              <span key={r} className="text-[9px] font-medium bg-accent/10 text-accent px-1.5 py-0.5 rounded uppercase">{r}</span>
+                            ))}
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            value={currentSplit}
-                            onChange={(e) => handleSplitChange(artist.id, parseFloat(e.target.value) || 0)}
-                            className="w-24 bg-card border border-border rounded px-2.5 py-1.5 text-sm font-semibold focus:ring-1 focus:ring-accent text-right"
-                          />
-                          <span className={`font-bold ${colors[idx % colors.length]}`}>%</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                        </td>
 
-              {/* Quick Actions */}
-              <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const eq = 100 / involvedArtists.length;
-                      setSplits(involvedArtists.map(a => ({ artistId: a.id, percentage: parseFloat(eq.toFixed(1)) })));
-                    }}
-                  >
-                    Split Equally
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSplits(involvedArtists.map((a, i) => ({ artistId: a.id, percentage: i === 0 ? 100 : 0 })));
-                    }}
-                  >
-                    100% to Main Artist
-                  </Button>
-                </div>
-              </div>
-            </Card>
+                        {/* Email Address */}
+                        <td className="px-4 py-4">
+                          {isEditing ? (
+                            <input
+                              type="email"
+                              value={editArtistForm.email}
+                              onChange={(e) => setEditArtistForm({ ...editArtistForm, email: e.target.value })}
+                              className="w-full bg-background border border-border rounded px-2 py-1 text-xs focus:ring-1 focus:ring-accent focus:outline-none"
+                              required
+                            />
+                          ) : (
+                            <span className="text-xs text-muted-foreground truncate block max-w-[220px]" title={artistSummary.email}>
+                              {artistSummary.email && !artistSummary.email.startsWith('temp_') ? artistSummary.email : '—'}
+                            </span>
+                          )}
+                        </td>
 
-            {/* Right Column: Involved Artists & Payouts */}
-            <Card className="glass-card p-6 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="font-bold text-lg">Involved Artists & Payouts</h3>
-                    <p className="text-sm text-muted-foreground">Payout details for all artists involved in tracks & album credits.</p>
-                  </div>
-                  <Button onClick={handleOpenRecordPaymentGeneral} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Plus className="w-4 h-4 mr-2" /> Record Payout
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {paymentSummary?.artists?.map((artistSummary: any) => {
-                    const outstanding = artistSummary.totalUnpaid || 0;
-                    return (
-                      <div key={artistSummary.name} className="p-4 bg-background border border-border rounded-lg space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-bold text-sm">{artistSummary.name}</h4>
-                              {artistSummary.isSystem ? (
-                                <span className="text-[10px] font-bold bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded uppercase">System Account</span>
-                              ) : (
-                                <span className="text-[10px] font-bold bg-yellow-500/10 text-yellow-400 px-1.5 py-0.5 rounded uppercase">Custom Artist</span>
-                              )}
-                            </div>
-                            <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                              {artistSummary.roles?.map((r: string) => (
-                                <span key={r} className="text-[10px] font-medium bg-accent/10 text-accent px-1.5 py-0.5 rounded uppercase">{r}</span>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-muted-foreground">Split percentage</p>
-                            <p className="font-bold text-accent">{artistSummary.percentage}%</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t border-border/50 text-xs">
-                          <div>
-                            <p className="text-muted-foreground mb-0.5">PayPal Account</p>
-                            <p className="font-mono text-foreground truncate max-w-[140px]" title={artistSummary.paypalAccount || '—'}>
+                        {/* PayPal Account */}
+                        <td className="px-4 py-4">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editArtistForm.paypalAccount}
+                              onChange={(e) => setEditArtistForm({ ...editArtistForm, paypalAccount: e.target.value })}
+                              className="w-full bg-background border border-border rounded px-2 py-1 text-xs focus:ring-1 focus:ring-accent focus:outline-none"
+                            />
+                          ) : (
+                            <span className="text-xs font-mono text-muted-foreground truncate block max-w-[180px]" title={artistSummary.paypalAccount}>
                               {artistSummary.paypalAccount || '—'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground mb-0.5">Total Share</p>
-                            <p className="font-bold text-foreground">
-                              ${(artistSummary.share || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground mb-0.5">Total Paid</p>
-                            <p className="font-bold text-green-500">
-                              ${(artistSummary.totalPaid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground mb-0.5">Outstanding</p>
-                            <p className={`font-bold ${outstanding > 0 ? 'text-red-500' : 'text-foreground'}`}>
-                              ${outstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                        </div>
+                            </span>
+                          )}
+                        </td>
 
-                        {artistSummary.isSystem && outstanding > 0 && (
-                          <div className="pt-2 flex justify-end">
+                        {/* Split Percentage Input directly inline! */}
+                        <td className="px-4 py-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={currentSplit}
+                              onChange={(e) => handleSplitChange(artistSummary.artistId, parseFloat(e.target.value) || 0)}
+                              className="w-16 bg-card border border-border rounded px-2 py-1.5 text-xs font-bold text-right focus:ring-1 focus:ring-accent"
+                            />
+                            <span className="text-muted-foreground text-xs font-bold">%</span>
+                          </div>
+                        </td>
+
+                        {/* Total Share */}
+                        <td className="px-4 py-4 text-right font-semibold text-sm">
+                          ${(artistSummary.share || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+
+                        {/* Total Paid */}
+                        <td className="px-4 py-4 text-right font-semibold text-green-500 text-sm">
+                          ${(artistSummary.totalPaid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+
+                        {/* Outstanding Balance */}
+                        <td className={`px-4 py-4 text-right font-extrabold text-sm ${outstanding > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                          ${outstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-4 text-center">
+                          {isEditing ? (
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-red-400 hover:bg-red-500/10 rounded"
+                                onClick={() => setEditingArtistId(null)}
+                                disabled={isSavingArtistInfo}
+                                title="Cancel"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-green-400 hover:bg-green-500/10 rounded"
+                                onClick={() => handleSaveArtistInfo(artistSummary.artistId)}
+                                disabled={isSavingArtistInfo}
+                                title="Save"
+                              >
+                                {isSavingArtistInfo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-4 h-4" />}
+                              </Button>
+                            </div>
+                          ) : (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-xs border-accent/40 text-accent hover:bg-accent/10 h-7"
-                              onClick={() => handleOpenRecordPayment(artistSummary)}
+                              className="h-7 px-2 text-xs border-accent/40 text-accent hover:bg-accent/10"
+                              onClick={() => {
+                                setEditingArtistId(artistSummary.artistId);
+                                setEditArtistForm({
+                                  email: artistSummary.email && !artistSummary.email.startsWith('temp_') ? artistSummary.email : '',
+                                  paypalAccount: artistSummary.paypalAccount || '',
+                                });
+                              }}
                             >
-                              <DollarSign className="w-3.5 h-3.5 mr-1" /> Record Payment
+                              Edit
                             </Button>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </td>
+                      </tr>
                     );
                   })}
 
                   {(!paymentSummary?.artists || paymentSummary.artists.length === 0) && (
-                    <div className="text-center p-6 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
-                      No involved artists found.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-
-          </div>
-
-          {/* Payment History Log (at the bottom) */}
-          <Card className="glass-card p-6">
-            <div className="mb-4">
-              <h3 className="font-bold text-lg">Payment History Log</h3>
-              <p className="text-sm text-muted-foreground">Logs of all payout transactions recorded for this album.</p>
-            </div>
-
-            <div className="overflow-x-auto border border-border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-accent/5 border-b border-border">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">Date</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">Payee</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">PayPal Account</th>
-                    <th className="px-4 py-3 text-right font-bold text-muted-foreground text-sm">Amount Paid</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {paymentSummary?.paymentLogs?.map((log: any) => (
-                    <tr key={log.id} className="hover:bg-accent/5 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground text-sm">
-                        {new Date(log.paidAt).toLocaleDateString()} at {new Date(log.paidAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-sm">
-                        {log.artist?.name || '—'}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {log.paypalAccount || '—'}
-                      </td>
-                      <td className="px-4 py-3 text-right font-extrabold text-green-500 text-sm">
-                        ${(log.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  ))}
-
-                  {(!paymentSummary?.paymentLogs || paymentSummary.paymentLogs.length === 0) && (
                     <tr>
-                      <td colSpan={4} className="text-center p-6 text-muted-foreground text-sm">
-                        No payout history logged yet.
+                      <td colSpan={8} className="text-center p-8 text-muted-foreground text-sm">
+                        No artists found for this album.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Quick Actions Footer */}
+            <div className="mt-6 flex justify-between items-center border-t border-border pt-4">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const systemArtistsList = paymentSummary?.artists || [];
+                    if (systemArtistsList.length === 0) return;
+                    const eq = 100 / systemArtistsList.length;
+                    setSplits(systemArtistsList.map((a: any) => ({ artistId: a.artistId, percentage: parseFloat(eq.toFixed(1)) })));
+                  }}
+                >
+                  Split Equally
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const systemArtistsList = paymentSummary?.artists || [];
+                    if (systemArtistsList.length === 0) return;
+                    setSplits(systemArtistsList.map((a: any) => ({ artistId: a.artistId, percentage: a.artistId === album.artistId ? 100 : 0 })));
+                  }}
+                >
+                  100% to Primary Artist
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
@@ -2004,125 +1903,22 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
             </div>
 
             {/* Actions - sticky footer */}
-            <div className="flex-shrink-0 flex justify-between items-center gap-3 pt-4 mt-2 border-t border-border">
-              <Button
-                type="button"
-                variant="outline"
-                className="border-accent/40 text-accent hover:bg-accent/10"
-                onClick={() => { setIsEditAlbumOpen(false); setEditTracksData(album.tracks || []); setIsEditTracksOpen(true); }}
-              >
-                <Music className="w-4 h-4 mr-2" /> Edit Tracks Instead
+            <div className="flex-shrink-0 flex justify-end items-center gap-3 pt-4 mt-2 border-t border-border">
+              <Button type="button" variant="outline" onClick={() => setIsEditAlbumOpen(false)}>Cancel</Button>
+              <Button type="submit" className="bg-accent text-accent-foreground" disabled={isEditSubmitting}>
+                {isEditSubmitting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                ) : (
+                  <><Check className="w-4 h-4 mr-2" /> Save Changes</>
+                )}
               </Button>
-              <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => setIsEditAlbumOpen(false)}>Cancel</Button>
-                <Button type="submit" className="bg-accent text-accent-foreground" disabled={isEditSubmitting}>
-                  {isEditSubmitting ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
-                  ) : (
-                    <><Check className="w-4 h-4 mr-2" /> Save Changes</>
-                  )}
-                </Button>
-              </div>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Tracks Dialog */}
-      <Dialog open={isEditTracksOpen} onOpenChange={setIsEditTracksOpen}>
-        <DialogContent className="glass-card w-[95vw] sm:w-[95vw] max-w-[1600px] sm:max-w-[1600px] h-[92vh] max-h-[92vh] overflow-hidden flex flex-col !p-5">
-          <DialogHeader className="flex-shrink-0 pb-3 border-b border-border">
-            <div className="flex justify-between items-center w-full">
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <Music className="w-5 h-5 text-accent" /> Edit Tracks
-                <span className="ml-auto text-xs font-normal text-muted-foreground bg-accent/10 px-2 py-1 rounded">
-                  {album.tracks?.length || 0} tracks · {album.title}
-                </span>
-              </DialogTitle>
-              <Button onClick={handleAddTrack} className="bg-accent hover:bg-accent/90 text-accent-foreground text-xs h-8">
-                <Plus className="w-3.5 h-3.5 mr-1" /> Add New Track
-              </Button>
-            </div>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto pt-3">
-            <div className="overflow-x-auto border border-border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-accent/5 border-b border-border">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">Title</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">Mix Title</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground w-36 text-sm">ISRC</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">Primary Artists</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">Remixing Artists</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">Featuring</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground text-sm">Composers</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground w-14 text-sm">P©</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground w-14 text-sm">C©</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground w-20 text-sm">Genre</th>
-                    <th className="px-4 py-3 text-left font-bold text-muted-foreground w-16 text-sm">Explicit</th>
-                    <th className="px-4 py-3 text-center font-bold text-muted-foreground w-20 text-sm">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {editTracksData.map((track: any) => (
-                    <tr key={track.id} className="hover:bg-accent/5 transition-colors">
-                      <td className="px-4 py-3 font-bold text-base">{track.title}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-sm">{track.mixTitle || '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`font-mono text-sm px-1.5 py-0.5 rounded ${track.isrc ? 'bg-accent/10 text-accent' : 'text-muted-foreground'
-                          }`}>
-                          {track.isrc || '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground text-sm" title={track.primaryArtists}>
-                        <span className="block truncate max-w-[120px]">{track.primaryArtists || '—'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground text-sm" title={track.remixingArtists}>
-                        <span className="block truncate max-w-[120px]">{track.remixingArtists || '—'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground text-sm">{track.featuring || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-sm" title={track.composers}>
-                        <span className="block truncate max-w-[120px]">{track.composers || '—'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground text-sm">{track.pYear || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-sm">{track.cYear || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-sm" title={track.genre}>
-                        <span className="block truncate max-w-[80px]">{track.genre || '—'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {track.hasExplicitContent ? (
-                          <span className="bg-red-500/20 text-red-400 text-xs font-bold px-2 py-1 rounded uppercase">E</span>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-7"
-                          onClick={() => handleOpenEditTrack(track)}
-                        >
-                          <Edit2 className="w-3 h-3 mr-1" />
-                          Edit
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="flex-shrink-0 flex justify-end gap-3 pt-4 border-t border-border mt-2">
-            <Button variant="outline" onClick={() => setIsEditTracksOpen(false)}>Close</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit Track Dialog */}
-      <Dialog open={isEditTrackOpen} onOpenChange={(open: boolean) => { setIsEditTrackOpen(open); if (!open) setIsEditTracksOpen(true); }}>
+      <Dialog open={isEditTrackOpen} onOpenChange={(open: boolean) => setIsEditTrackOpen(open)}>
         <DialogContent className="glass-card w-[95vw] sm:w-[95vw] max-w-[1600px] sm:max-w-[1600px] h-[92vh] max-h-[92vh] overflow-hidden flex flex-col !p-5">
           <DialogHeader className="flex-shrink-0 pb-3 border-b border-border">
             <DialogTitle className="flex items-center gap-2">
@@ -2281,74 +2077,7 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
         </DialogContent>
       </Dialog>
 
-      {/* Record Payment Dialog */}
-      <Dialog open={isRecordPaymentOpen} onOpenChange={setIsRecordPaymentOpen}>
-        <DialogContent className="glass-card max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-accent" /> Record Artist Payment
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleRecordPaymentSubmit} className="space-y-4 pt-2">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Select System Artist</label>
-              <select
-                value={recordPaymentForm.artistId}
-                onChange={e => handleRecordPaymentArtistChange(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-accent focus:outline-none"
-                required
-              >
-                <option value="">Choose artist...</option>
-                {paymentSummary?.artists?.filter((a: any) => a.isSystem).map((artist: any) => (
-                  <option key={artist.artistId} value={artist.artistId}>{artist.name}</option>
-                ))}
-              </select>
-            </div>
 
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">PayPal Account</label>
-              <input
-                type="text"
-                value={recordPaymentForm.paypalAccount || ''}
-                onChange={e => setRecordPaymentForm({ ...recordPaymentForm, paypalAccount: e.target.value })}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-accent focus:outline-none"
-                placeholder="PayPal address"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Outstanding Balance</label>
-              <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-muted-foreground font-mono">
-                ${(recordPaymentForm.outstandingBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Payment Amount ($) <span className="text-red-400">*</span></label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={recordPaymentForm.amount || ''}
-                onChange={e => setRecordPaymentForm({ ...recordPaymentForm, amount: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-accent focus:outline-none font-bold"
-                required
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-border">
-              <Button type="button" variant="outline" onClick={() => setIsRecordPaymentOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-accent text-accent-foreground" disabled={isRecordPaymentSubmitting}>
-                {isRecordPaymentSubmitting ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording...</>
-                ) : (
-                  <><Check className="w-4 h-4 mr-2" /> Record Payout</>
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
