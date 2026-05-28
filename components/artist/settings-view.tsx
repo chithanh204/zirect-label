@@ -24,6 +24,7 @@ export function SettingsView() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [currency, setCurrency] = useState('');
   const [bankAccount, setBankAccount] = useState('');
+  const [paypalAccount, setPaypalAccount] = useState('');
 
   // Password Form
   const [currentPassword, setCurrentPassword] = useState('');
@@ -45,6 +46,7 @@ export function SettingsView() {
         setPaymentMethod(res.data.paymentMethod || 'Bank Transfer');
         setCurrency(res.data.currency || 'USD');
         setBankAccount(res.data.bankAccount || '');
+        setPaypalAccount(res.data.paypalAccount || '');
       }
     } catch (e) {
       console.error(e);
@@ -69,15 +71,19 @@ export function SettingsView() {
   };
 
   const handleSavePayment = async () => {
+    if (!paypalAccount) {
+      alert('Please enter your PayPal account email address.');
+      return;
+    }
     try {
       setSavingPayment(true);
-      const res = await apiClient.updateArtistProfile({ paymentMethod, currency, bankAccount }) as any;
+      const res = await apiClient.updateMyPayPal(paypalAccount) as any;
       if (res?.success) {
-        alert('Payment info updated successfully. Please wait for admin verification.');
+        alert('PayPal email linked successfully! Pending admin approval.');
         loadProfile();
       }
     } catch (e: any) {
-      alert(e.message || 'Failed to update payment info');
+      alert(e.message || 'Failed to update PayPal account.');
     } finally {
       setSavingPayment(false);
     }
@@ -119,7 +125,7 @@ export function SettingsView() {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Profile Section */}
-      <Card className="bg-card border-border p-6">
+      <Card className="glass-card p-6">
         <h2 className="text-xl font-bold mb-6">Profile Information</h2>
         
         <div className="space-y-4">
@@ -162,76 +168,53 @@ export function SettingsView() {
       </Card>
 
       {/* Bank & Payment Info */}
-      <Card className="bg-card border-border p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Payment Information</h2>
+      <Card className="glass-card p-6 border border-accent/15 relative overflow-hidden bg-[rgba(8,20,45,0.25)]">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+          <div>
+            <h2 className="text-xl font-bold">PayPal Payment Information</h2>
+            <p className="text-xs text-muted-foreground mt-1">Provide your PayPal account email to receive your royalty payouts from Zirect Label.</p>
+          </div>
           {profile?.paymentVerificationStatus === 'verified' && (
-            <div className="flex items-center gap-1.5 text-green-500 bg-green-500/10 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-1.5 text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto">
               <CheckCircle2 className="w-4 h-4" /> Verified
             </div>
           )}
           {profile?.paymentVerificationStatus === 'pending' && (
-            <div className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full text-sm font-medium">
-              <Clock className="w-4 h-4" /> Pending Verification
+            <div className="flex items-center gap-1.5 text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto">
+              <Clock className="w-4 h-4" /> Pending Approval
             </div>
           )}
           {(!profile?.paymentVerificationStatus || profile?.paymentVerificationStatus === 'unverified') && (
-            <div className="flex items-center gap-1.5 text-red-500 bg-red-500/10 px-3 py-1 rounded-full text-sm font-medium">
-              <XCircle className="w-4 h-4" /> Unverified
+            <div className="flex items-center gap-1.5 text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-auto">
+              <XCircle className="w-4 h-4" /> Unlinked
             </div>
           )}
         </div>
         
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Payment Method</label>
-              <select 
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-              >
-                <option value="Bank Transfer">Bank Transfer</option>
-                <option value="PayPal">PayPal</option>
-                <option value="Stripe">Stripe</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Currency</label>
-              <select 
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-              >
-                <option value="USD">USD - US Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="VND">VND - Vietnamese Dong</option>
-              </select>
-            </div>
-          </div>
-
           <div>
-            <label className="text-sm font-medium mb-2 block">Account Number / Email</label>
+            <label className="text-sm font-medium mb-2 block">PayPal Account (Email) <span className="text-accent">*</span></label>
             <Input 
-              value={bankAccount}
-              onChange={(e) => setBankAccount(e.target.value)}
-              placeholder="Your bank account number or PayPal email" 
-              className="bg-background" 
+              type="email"
+              value={paypalAccount}
+              onChange={(e) => setPaypalAccount(e.target.value)}
+              placeholder="artist@paypal.com" 
+              className="bg-background border-accent/15 focus:border-accent/40" 
             />
           </div>
 
-          <Button onClick={handleSavePayment} disabled={savingPayment} className="bg-accent text-accent-foreground hover:bg-accent/90 w-full">
+          <Button onClick={handleSavePayment} disabled={savingPayment} className="bg-accent text-accent-foreground hover:bg-accent/90 w-full neon-glow-sm">
             {savingPayment ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            {savingPayment ? 'Saving...' : 'Save Payment Info'}
+            {savingPayment ? 'Saving...' : 'Save PayPal Account'}
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Note: Updating your payment info will require admin verification before you can receive payouts.
+          <p className="text-[11px] text-muted-foreground text-center">
+            * Note: Updating your PayPal email will reset your account status to <strong>Pending Approval</strong>. The admin will verify your details before processing payouts.
           </p>
         </div>
       </Card>
 
       {/* Account Settings */}
-      <Card className="bg-card border-border p-6">
+      <Card className="glass-card p-6">
         <h2 className="text-xl font-bold mb-6">Account Settings</h2>
         
         <div className="space-y-4">
@@ -277,7 +260,7 @@ export function SettingsView() {
       </Card>
 
       {/* Contact Admin */}
-      <Card className="bg-card border-border p-6">
+      <Card className="glass-card p-6">
         <h2 className="text-xl font-bold mb-6">Support & Contact</h2>
         
         <div className="space-y-3">

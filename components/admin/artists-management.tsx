@@ -2,11 +2,12 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, MoreVertical, Mail, X, ImageIcon, Copy, Check, Eye, EyeOff, KeyRound, RefreshCw, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Plus, Search, MoreVertical, Mail, X, ImageIcon, Copy, Check, Eye, EyeOff, KeyRound, RefreshCw, Loader2, Edit, ShieldAlert } from 'lucide-react';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Artist {
   id: string;
@@ -19,6 +20,10 @@ interface Artist {
   totalStreams: number;
   totalRevenue: number;
   status: string;
+  paypalAccount?: string;
+  composerName?: string;
+  isActive: boolean;
+  isAdmin: boolean;
   joinedAt: string;
   createdAt: string;
   paymentVerificationStatus?: string;
@@ -28,15 +33,29 @@ interface Artist {
 }
 
 export function ArtistsManagement() {
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(searchParams.get('action') === 'add-artist');
+  
+  // Dialog controls
+  const [isCreateOpen, setIsCreateOpen] = useState(searchParams.get('action') === 'add-artist');
+  const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingArtist, setEditingArtist] = useState<Artist | null>(null);
+
+  const [adminFormData, setAdminFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Real data state
   const [artists, setArtists] = useState<Artist[]>([]);
@@ -58,11 +77,26 @@ export function ArtistsManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState<string | null>(null);
 
+  // Form states
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     bio: '',
-    avatar: ''
+    avatar: '',
+    paypalAccount: '',
+    composerName: '',
+    isAdmin: false
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    bio: '',
+    avatar: '',
+    paypalAccount: '',
+    composerName: '',
+    isActive: true,
+    isAdmin: false
   });
 
   // Fetch artists from API
@@ -109,14 +143,30 @@ export function ArtistsManagement() {
     }));
   };
 
-  const handleFileSelect = useCallback(async (file: File) => {
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileSelect = useCallback(async (file: File, isEdit: boolean = false) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      setSubmitError('Invalid file type. Allowed: JPEG, PNG, WebP, GIF');
+      toast({
+        title: 'Upload Error',
+        description: 'Allowed formats: JPEG, PNG, WebP, GIF',
+        variant: 'destructive',
+      });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setSubmitError('File too large. Maximum size: 5MB');
+      toast({
+        title: 'Upload Error',
+        description: 'Max file size is 5MB',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -127,41 +177,38 @@ export function ArtistsManagement() {
     reader.readAsDataURL(file);
 
     setIsUploading(true);
-    setSubmitError(null);
     try {
       const response = await apiClient.uploadImage(file, 'zirect/avatars');
       if (response && response.success && response.data) {
-        setFormData(prev => ({ ...prev, avatar: response.data.url }));
+        if (isEdit) {
+          setEditFormData(prev => ({ ...prev, avatar: response.data.url }));
+        } else {
+          setFormData(prev => ({ ...prev, avatar: response.data.url }));
+        }
+        toast({
+          title: 'Success',
+          description: 'Avatar uploaded successfully.',
+        });
       } else {
         throw new Error('Upload failed');
       }
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Failed to upload avatar');
+      toast({
+        title: 'Upload Failed',
+        description: 'Failed to upload avatar to storage.',
+        variant: 'destructive',
+      });
       setAvatarPreview(null);
     } finally {
       setIsUploading(false);
     }
-  }, []);
+  }, [toast]);
 
-  const handleVerifyPayment = async (artistId: string) => {
-    try {
-      const res = await apiClient.verifyPaymentInfo(artistId) as any;
-      if (res?.success) {
-        alert('Payment info verified successfully');
-        fetchArtists();
-      } else {
-        alert(res?.message || 'Failed to verify payment info');
-      }
-    } catch (error) {
-      alert('Error verifying payment info');
-    }
-  };
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent, isEdit: boolean = false) => {
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
+    if (file) handleFileSelect(file, isEdit);
   }, [handleFileSelect]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -174,11 +221,18 @@ export function ArtistsManagement() {
     setIsDragOver(false);
   }, []);
 
-  const removeAvatar = () => {
+  const removeAvatar = (isEdit: boolean = false) => {
     setAvatarPreview(null);
-    setFormData(prev => ({ ...prev, avatar: '' }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (isEdit) {
+      setEditFormData(prev => ({ ...prev, avatar: '' }));
+      if (editFileInputRef.current) {
+        editFileInputRef.current.value = '';
+      }
+    } else {
+      setFormData(prev => ({ ...prev, avatar: '' }));
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -211,7 +265,24 @@ export function ArtistsManagement() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleOpenEdit = (artist: Artist) => {
+    setEditingArtist(artist);
+    setEditFormData({
+      name: artist.name,
+      email: artist.email,
+      bio: artist.bio || '',
+      avatar: artist.avatar || '',
+      paypalAccount: artist.paypalAccount || '',
+      composerName: artist.composerName || '',
+      isActive: artist.isActive,
+      isAdmin: artist.isAdmin
+    });
+    setAvatarPreview(artist.avatar || null);
+    setIsEditOpen(true);
+    setOpenDropdownId(null);
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
     setIsSubmitting(true);
@@ -228,6 +299,9 @@ export function ArtistsManagement() {
         email: formData.email,
         bio: formData.bio,
         avatar: formData.avatar,
+        paypalAccount: formData.paypalAccount,
+        composerName: formData.composerName,
+        isAdmin: formData.isAdmin,
       });
 
       if (response && (response as any).success) {
@@ -239,12 +313,10 @@ export function ArtistsManagement() {
           action: 'created',
         });
 
-        setFormData({ name: '', email: '', bio: '', avatar: '' });
+        setFormData({ name: '', email: '', bio: '', avatar: '', paypalAccount: '', composerName: '', isAdmin: false });
         setAvatarPreview(null);
-        setIsDialogOpen(false);
+        setIsCreateOpen(false);
         setIsPasswordDialogOpen(true);
-
-        // Refresh the artists list
         fetchArtists();
       } else {
         setSubmitError((response as any).message || 'Failed to create artist');
@@ -256,10 +328,85 @@ export function ArtistsManagement() {
     }
   };
 
-  // Stats from real data
-  const totalArtists = artists.length;
-  const activeArtists = artists.filter(a => a.status === 'active').length;
-  const totalStreams = artists.reduce((sum, a) => sum + a.totalStreams, 0);
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingArtist) return;
+
+    // Toggle active state confirmation
+    if (editFormData.isActive !== editingArtist.isActive) {
+      const confirmMsg = editFormData.isActive 
+        ? `Are you sure you want to reactivate ${editingArtist.name}? They will regain full dashboard access.`
+        : `Are you sure you want to deactivate ${editingArtist.name}? They will be locked out and will not be able to manage their catalog or view stream stats.`;
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+    }
+
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem('authToken') || undefined;
+      const res: any = await apiClient.updateArtistAdmin(editingArtist.id, editFormData, token);
+      if (res && res.success) {
+        toast({
+          title: 'Profile Updated',
+          description: 'Artist details synced successfully.',
+        });
+        setIsEditOpen(false);
+        fetchArtists();
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update artist profile.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+    setIsSubmitting(true);
+
+    try {
+      if (!adminFormData.name || !adminFormData.email || !adminFormData.password) {
+        setSubmitError('Name, Email, and Password are required');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (adminFormData.password.length < 6) {
+        setSubmitError('Password must be at least 6 characters');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const response = await apiClient.createArtist({
+        name: adminFormData.name,
+        email: adminFormData.email,
+        password: adminFormData.password,
+        isAdmin: true,
+      }) as any;
+
+      if (response && response.success) {
+        toast({
+          title: 'Success',
+          description: 'Admin user account created successfully.',
+        });
+        setAdminFormData({ name: '', email: '', password: '' });
+        setIsCreateAdminOpen(false);
+        fetchArtists();
+      } else {
+        setSubmitError(response.message || 'Failed to create admin');
+      }
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to create admin');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -272,178 +419,386 @@ export function ArtistsManagement() {
             placeholder="Search artists..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+            className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent text-foreground"
           />
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Artist
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Artist</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {submitError && (
-                <div className="p-3 bg-red-500/20 border border-red-500 text-red-500 rounded-lg text-sm">
-                  {submitError}
+
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {/* Create Artist Dialog */}
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-cyan-500/10 border border-cyan-500/25 hover:bg-cyan-500/20 text-cyan-400 font-semibold w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Artist
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="glass border-accent/20 text-foreground max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>Add New Artist</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreateSubmit} className="space-y-4">
+                {submitError && (
+                  <div className="p-3 bg-red-500/20 border border-red-500 text-red-500 rounded-lg text-sm">
+                    {submitError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-xs font-semibold mb-1">Artist Name <span className="text-accent">*</span></label>
+                    <input
+                      required
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Enter artist name"
+                      className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-xs font-semibold mb-1">Email <span className="text-accent">*</span></label>
+                    <input
+                      required
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Enter email address"
+                      className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Artist Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter artist name"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                  disabled={isSubmitting}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-xs font-semibold mb-1">PayPal Account</label>
+                    <input
+                      type="email"
+                      name="paypalAccount"
+                      value={formData.paypalAccount}
+                      onChange={handleInputChange}
+                      placeholder="paypal@example.com"
+                      className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-xs font-semibold mb-1">Composer Name</label>
+                    <input
+                      type="text"
+                      name="composerName"
+                      value={formData.composerName}
+                      onChange={handleInputChange}
+                      placeholder="Legal Name or Alias"
+                      className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Bio</label>
+                  <textarea
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleInputChange}
+                    placeholder="Enter artist bio (optional)"
+                    rows={3}
+                    className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Avatar Image</label>
+                  {avatarPreview ? (
+                    <div className="relative w-full">
+                      <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-accent/50">
+                        <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAvatar(false)}
+                        className="absolute top-0 left-20 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                        disabled={isUploading}
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onDrop={(e) => handleDrop(e, false)}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`w-full border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200 ${isDragOver ? 'border-accent bg-accent/10' : 'border-border hover:border-accent/50 hover:bg-accent/5'}`}
+                    >
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Click or drag & drop to upload JPEG/PNG</p>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileSelect(file, false);
+                    }}
+                    disabled={isSubmitting || isUploading}
+                  />
+                </div>
+
+                <p className="text-xs text-muted-foreground italic">
+                  * An artist user account with an auto-generated password will be created in the database.
+                </p>
+
+                <DialogFooter className="pt-4 border-t border-accent/10">
+                  <Button type="button" variant="ghost" onClick={() => setIsCreateOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                  <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting || isUploading}>
+                    Create Profile
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Create Admin Dialog */}
+          <Dialog open={isCreateAdminOpen} onOpenChange={setIsCreateAdminOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold w-full sm:w-auto neon-glow-sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Admin
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="glass border-accent/20 text-foreground max-w-md shadow-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Admin Account</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreateAdminSubmit} className="space-y-4">
+                {submitError && (
+                  <div className="p-3 bg-red-500/20 border border-red-500 text-red-500 rounded-lg text-sm">
+                    {submitError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Admin Name <span className="text-accent">*</span></label>
+                  <input
+                    required
+                    type="text"
+                    value={adminFormData.name}
+                    onChange={(e) => setAdminFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter full name"
+                    className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Email Address <span className="text-accent">*</span></label>
+                  <input
+                    required
+                    type="email"
+                    value={adminFormData.email}
+                    onChange={(e) => setAdminFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="admin@example.com"
+                    className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Password <span className="text-accent">*</span></label>
+                  <input
+                    required
+                    type="password"
+                    value={adminFormData.password}
+                    onChange={(e) => setAdminFormData(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Minimum 6 characters"
+                    className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <p className="text-xs text-muted-foreground italic">
+                  * This account will have administrative access to the platform and can log in directly.
+                </p>
+
+                <DialogFooter className="pt-4 border-t border-accent/10">
+                  <Button type="button" variant="ghost" onClick={() => setIsCreateAdminOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                  <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>
+                    Create Admin
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="glass border-accent/20 text-foreground max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Edit Artist Profile</DialogTitle>
+          </DialogHeader>
+          {editingArtist && (
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-semibold mb-1">Artist Name <span className="text-accent">*</span></label>
+                  <input
+                    required
+                    type="text"
+                    name="name"
+                    value={editFormData.name}
+                    onChange={handleEditInputChange}
+                    className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-semibold mb-1">Email <span className="text-accent">*</span></label>
+                  <input
+                    required
+                    type="email"
+                    name="email"
+                    value={editFormData.email}
+                    onChange={handleEditInputChange}
+                    className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-semibold mb-1">PayPal Account</label>
+                  <input
+                    type="email"
+                    name="paypalAccount"
+                    value={editFormData.paypalAccount}
+                    onChange={handleEditInputChange}
+                    placeholder="paypal@example.com"
+                    className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-semibold mb-1">Composer Name</label>
+                  <input
+                    type="text"
+                    name="composerName"
+                    value={editFormData.composerName}
+                    onChange={handleEditInputChange}
+                    placeholder="Legal Name or Alias"
+                    className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter email address"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Bio
-                </label>
+                <label className="block text-xs font-semibold mb-1">Bio</label>
                 <textarea
                   name="bio"
-                  value={formData.bio}
-                  onChange={handleInputChange}
-                  placeholder="Enter artist bio (optional)"
+                  value={editFormData.bio}
+                  onChange={handleEditInputChange}
                   rows={3}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+                  className="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
                   disabled={isSubmitting}
                 />
               </div>
 
+              <div className="p-4 bg-accent/5 border border-accent/15 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">Artist Account Status</p>
+                    <p className="text-xs text-muted-foreground">Toggle to deactivate or activate this artist profile.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editFormData.isActive}
+                    onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })}
+                    className="w-5 h-5 rounded border-accent text-accent focus:ring-accent cursor-pointer"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Avatar
-                </label>
+                <label className="block text-xs font-semibold mb-1">Avatar Image</label>
                 {avatarPreview ? (
                   <div className="relative w-full">
                     <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-accent/50">
-                      <img
-                        src={avatarPreview}
-                        alt="Avatar preview"
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
                       {isUploading && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                          <Loader2 className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                         </div>
                       )}
                     </div>
                     <button
                       type="button"
-                      onClick={removeAvatar}
+                      onClick={() => removeAvatar(true)}
                       className="absolute top-0 left-20 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
                       disabled={isUploading}
                     >
                       <X className="w-3 h-3 text-white" />
                     </button>
-                    {formData.avatar && !isUploading && (
-                      <p className="text-xs text-green-500 mt-2 flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Uploaded successfully
-                      </p>
-                    )}
                   </div>
                 ) : (
                   <div
-                    onDrop={handleDrop}
+                    onDrop={(e) => handleDrop(e, true)}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`w-full border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200
-                      ${isDragOver
-                        ? 'border-accent bg-accent/10'
-                        : 'border-border hover:border-accent/50 hover:bg-accent/5'
-                      }`}
+                    onClick={() => editFileInputRef.current?.click()}
+                    className={`w-full border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200 ${isDragOver ? 'border-accent bg-accent/10' : 'border-border hover:border-accent/50 hover:bg-accent/5'}`}
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isDragOver ? 'bg-accent/20' : 'bg-background'}`}>
-                      <ImageIcon className={`w-5 h-5 ${isDragOver ? 'text-accent' : 'text-muted-foreground'}`} />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground">
-                        <span className="text-accent font-medium">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        JPEG, PNG, WebP, GIF (max 5MB)
-                      </p>
-                    </div>
+                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Click or drag & drop to upload JPEG/PNG</p>
                   </div>
                 )}
                 <input
-                  ref={fileInputRef}
+                  ref={editFileInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleFileSelect(file);
+                    if (file) handleFileSelect(file, true);
                   }}
                   disabled={isSubmitting || isUploading}
                 />
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                A user account with a random password will be auto-generated for this artist.
-              </p>
-
-              <div className="flex gap-2 justify-end pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancel
+              <DialogFooter className="pt-4 border-t border-accent/10">
+                <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                <Button type="submit" disabled={isSubmitting} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                  Save Settings
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-accent text-accent-foreground hover:bg-accent/90"
-                  disabled={isSubmitting || isUploading}
-                >
-                  {isSubmitting ? 'Creating...' : 'Create Artist'}
-                </Button>
-              </div>
+              </DialogFooter>
             </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Password Dialog (shared between create & reset) */}
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-md">
+        <DialogContent className="glass border-accent/20 text-foreground max-w-md shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                {passwordInfo?.action === 'reset'
-                  ? <KeyRound className="w-4 h-4 text-green-500" />
-                  : <Check className="w-4 h-4 text-green-500" />
-                }
+                {passwordInfo?.action === 'reset' ? <KeyRound className="w-4 h-4 text-green-500" /> : <Check className="w-4 h-4 text-green-500" />}
               </div>
               {passwordInfo?.action === 'reset' ? 'Password Reset Successfully' : 'Artist Created Successfully'}
             </DialogTitle>
@@ -460,9 +815,7 @@ export function ArtistsManagement() {
                   <p className="text-sm font-medium">{passwordInfo.email}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">
-                    {passwordInfo.action === 'reset' ? 'New Password' : 'Generated Password'}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{passwordInfo.action === 'reset' ? 'New Password' : 'Generated Password'}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <code className="flex-1 px-3 py-2 bg-card border border-border rounded-lg text-sm font-mono">
                       {showPassword ? passwordInfo.password : '••••••••••••••••'}
@@ -471,32 +824,22 @@ export function ArtistsManagement() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="p-2 rounded-lg hover:bg-accent/10 transition-colors"
-                      title={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword
-                        ? <EyeOff className="w-4 h-4 text-muted-foreground" />
-                        : <Eye className="w-4 h-4 text-muted-foreground" />
-                      }
+                      {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
                     </button>
                     <button
                       type="button"
                       onClick={handleCopyPassword}
                       className="p-2 rounded-lg hover:bg-accent/10 transition-colors"
-                      title="Copy password"
                     >
-                      {passwordCopied
-                        ? <Check className="w-4 h-4 text-green-500" />
-                        : <Copy className="w-4 h-4 text-muted-foreground" />
-                      }
+                      {passwordCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                <p className="text-xs text-amber-400">
-                  ⚠️ Please save this password and share it with the artist. It will not be shown again.
-                </p>
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-400">
+                ⚠️ Save this password and share it with the artist immediately.
               </div>
 
               <div className="flex justify-end">
@@ -518,16 +861,16 @@ export function ArtistsManagement() {
       </Dialog>
 
       {/* Artists Table */}
-      <Card className="bg-card border-border overflow-hidden">
+      <Card className="glass overflow-hidden shadow-xl border-accent/15">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-border bg-background/50">
-                <th className="px-6 py-4 text-left text-sm font-bold">Artist Name</th>
-                <th className="px-6 py-4 text-left text-sm font-bold">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-bold">Payment</th>
-                <th className="px-6 py-4 text-left text-sm font-bold">Total Streams</th>
-                <th className="px-6 py-4 text-left text-sm font-bold">Joined</th>
+              <tr className="border-b border-accent/10 bg-accent/5">
+                <th className="px-6 py-4 text-sm font-bold">Artist Profile</th>
+                <th className="px-6 py-4 text-sm font-bold">Status</th>
+                <th className="px-6 py-4 text-sm font-bold">PayPal Account</th>
+                <th className="px-6 py-4 text-sm font-bold">Composer Name</th>
+                <th className="px-6 py-4 text-sm font-bold">Joined Date</th>
                 <th className="px-6 py-4 text-right text-sm font-bold">Actions</th>
               </tr>
             </thead>
@@ -535,53 +878,45 @@ export function ArtistsManagement() {
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mt-2">Loading artists...</p>
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-accent" />
+                    <p className="text-sm text-muted-foreground mt-2">Loading database artists...</p>
                   </td>
                 </tr>
               ) : fetchError ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <p className="text-sm text-red-500">{fetchError}</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={fetchArtists}
-                      className="mt-2"
-                    >
-                      <RefreshCw className="w-3 h-3 mr-1" /> Retry
-                    </Button>
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-destructive">
+                    {fetchError}
                   </td>
                 </tr>
               ) : filteredArtists.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                    {searchTerm ? 'No artists match your search' : 'No artists found'}
+                    No artists registered.
                   </td>
                 </tr>
               ) : (
                 filteredArtists.map((artist, idx) => (
                   <tr
                     key={artist.id}
-                    className={`border-b border-border hover:bg-accent/5 transition-colors ${idx === filteredArtists.length - 1 ? 'border-0' : ''
-                      }`}
+                    className={`border-b border-accent/5 hover:bg-accent/5 transition-colors ${!artist.isActive ? 'opacity-60 bg-red-950/5' : ''}`}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {artist.avatar ? (
-                          <img
-                            src={artist.avatar}
-                            alt={artist.name}
-                            className="w-9 h-9 rounded-full object-cover border border-border"
-                          />
+                          <img src={artist.avatar} alt={artist.name} className="w-9 h-9 rounded-full object-cover border border-accent/20" />
                         ) : (
-                          <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm">
+                          <div className="w-9 h-9 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent font-bold text-sm">
                             {artist.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div>
-                          <p className="font-bold">{artist.name}</p>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <p className="font-bold flex items-center gap-1.5 text-foreground">
+                            {artist.name}
+                            {artist.isAdmin && (
+                              <span className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.2 rounded bg-accent/20 border border-accent/30 text-accent">Admin</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <Mail className="w-3 h-3" />
                             {artist.email}
                           </p>
@@ -589,34 +924,17 @@ export function ArtistsManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${artist.status === 'active'
-                        ? 'bg-green-500/20 text-green-500'
-                        : artist.status === 'pending'
-                          ? 'bg-yellow-500/20 text-yellow-500'
-                          : 'bg-red-500/20 text-red-500'
-                        }`}>
-                        {artist.status.toUpperCase()}
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${artist.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                        {artist.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      {artist.paymentVerificationStatus === 'verified' ? (
-                        <span className="text-green-500 font-medium flex items-center gap-1"><Check className="w-4 h-4" /> Verified</span>
-                      ) : artist.paymentVerificationStatus === 'pending' ? (
-                        <Button variant="outline" size="sm" className="h-7 text-xs border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10" onClick={() => handleVerifyPayment(artist.id)}>
-                          Verify Now
-                        </Button>
-                      ) : (
-                        <span className="text-red-500 font-medium flex items-center gap-1"><X className="w-4 h-4" /> Unverified</span>
-                      )}
+                    <td className="px-6 py-4 text-sm font-mono text-muted-foreground">
+                      {artist.paypalAccount || <span className="text-xs text-muted-foreground/40 italic">Not Specified</span>}
                     </td>
-                    <td className="px-6 py-4 text-accent font-bold">
-                      {artist.totalStreams >= 1000000
-                        ? `${(artist.totalStreams / 1000000).toFixed(1)}M`
-                        : artist.totalStreams >= 1000
-                          ? `${(artist.totalStreams / 1000).toFixed(1)}K`
-                          : artist.totalStreams}
+                    <td className="px-6 py-4 text-sm text-foreground">
+                      {artist.composerName || <span className="text-xs text-muted-foreground/40 italic">Not Specified</span>}
                     </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                    <td className="px-6 py-4 text-xs text-muted-foreground">
                       {new Date(artist.joinedAt || artist.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -626,24 +944,30 @@ export function ArtistsManagement() {
                             e.stopPropagation();
                             setOpenDropdownId(openDropdownId === artist.id ? null : artist.id);
                           }}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-background transition-colors"
+                          className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-accent/10 transition-colors"
                         >
-                          {isResettingPassword === artist.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                          ) : (
-                            <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                          )}
+                          <MoreVertical className="w-4 h-4 text-muted-foreground" />
                         </button>
 
                         {/* Dropdown Menu */}
                         {openDropdownId === artist.id && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-xl z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-background border border-accent/15 rounded-lg shadow-xl z-50 py-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEdit(artist);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
+                            >
+                              <Edit className="w-4 h-4 text-accent" />
+                              Edit Profile
+                            </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleResetPassword(artist);
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent/10 transition-colors"
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors border-t border-accent/5"
                             >
                               <KeyRound className="w-4 h-4 text-amber-500" />
                               Reset Password
@@ -659,28 +983,6 @@ export function ArtistsManagement() {
           </table>
         </div>
       </Card>
-
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-card border-border p-4">
-          <p className="text-sm text-muted-foreground mb-1">Total Artists</p>
-          <p className="text-2xl font-bold">{loading ? '—' : totalArtists}</p>
-        </Card>
-        <Card className="bg-card border-border p-4">
-          <p className="text-sm text-muted-foreground mb-1">Active Artists</p>
-          <p className="text-2xl font-bold text-green-500">{loading ? '—' : activeArtists}</p>
-        </Card>
-        <Card className="bg-card border-border p-4">
-          <p className="text-sm text-muted-foreground mb-1">Total Streams (All)</p>
-          <p className="text-2xl font-bold text-accent">
-            {loading ? '—' : totalStreams >= 1000000
-              ? `${(totalStreams / 1000000).toFixed(2)}M`
-              : totalStreams >= 1000
-                ? `${(totalStreams / 1000).toFixed(1)}K`
-                : totalStreams}
-          </p>
-        </Card>
-      </div>
     </div>
   );
 }

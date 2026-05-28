@@ -1,18 +1,35 @@
 'use client';
 
-import { LayoutDashboard, Users, Music, FileText, Settings, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, Music, FileText, Settings, LogOut, Menu, X, Home, DollarSign } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { apiClient } from '@/lib/api';
 
 export function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(true);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [title, setTitle] = useState<string>('Zirect Label');
+
+  useEffect(() => {
+    // Fetch home page config for logo
+    apiClient.getHomePageConfig()
+      .then((data: any) => {
+        if (data && data.success && data.data) {
+          if (data.data.logoUrl) setLogoUrl(data.data.logoUrl);
+          if (data.data.title) setTitle(data.data.title);
+        }
+      })
+      .catch((err) => console.error('Failed to load logo', err));
+  }, []);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
     { icon: Users, label: 'Artists', href: '/admin/artists' },
     { icon: Music, label: 'Albums', href: '/admin/albums' },
+    { icon: DollarSign, label: 'Revenue', href: '/admin/revenue' },
     { icon: FileText, label: 'Reports', href: '/admin/reports' },
+    { icon: Home, label: 'Edit Home Page', href: '/admin/edit-home-page' },
     { icon: Settings, label: 'Settings', href: '/admin/settings' },
   ];
 
@@ -21,24 +38,30 @@ export function AdminSidebar() {
       {/* Mobile Toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed top-4 left-4 z-40 p-2 hover:bg-muted rounded-lg transition-colors"
+        className="md:hidden fixed top-4 left-4 z-40 p-2 hover:bg-accent/10 rounded-lg transition-colors glass"
       >
         {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-screen w-64 bg-card border-r border-border transition-transform duration-300 z-30 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`fixed left-0 top-0 h-screen w-64 sidebar-glass transition-transform duration-300 z-30 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="p-6 space-y-8 h-full flex flex-col">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tighter">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <span className="text-accent-foreground text-sm font-bold">Z</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden relative">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={title}
+                  className="w-full h-full object-cover"
+                />
+              ) : null}
             </div>
-            Admin Panel
+            <span className="gradient-text-cyan">Admin Panel</span>
           </Link>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-2">
+          <nav className="flex-1 space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -55,14 +78,14 @@ export function AdminSidebar() {
           </nav>
 
           {/* User Profile & Logout */}
-          <div className="space-y-3 border-t border-border pt-4">
-            <div className="px-4 py-3 bg-background rounded-lg">
+          <div className="space-y-3 border-t border-accent/10 pt-4">
+            <div className="px-4 py-3 glass-card rounded-lg">
               <p className="text-xs text-muted-foreground mb-1">Logged in as</p>
               <p className="text-sm font-bold truncate">admin@zirect.com</p>
             </div>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start" 
+            <Button
+              variant="outline"
+              className="w-full justify-start border-accent/15 hover:border-accent/30 hover:bg-accent/5"
               onClick={() => {
                 localStorage.removeItem('authToken');
                 document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -79,7 +102,7 @@ export function AdminSidebar() {
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 md:hidden z-20"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm md:hidden z-20"
           onClick={() => setIsOpen(false)}
         />
       )}

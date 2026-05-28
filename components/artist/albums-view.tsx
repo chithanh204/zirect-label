@@ -85,7 +85,7 @@ export function AlbumsView() {
         return (
           <div key={album.id} className="space-y-6">
             {/* Album Header */}
-            <Card className="bg-card border-border p-6">
+            <Card className="glass-card p-6">
               <div className="flex flex-col sm:flex-row gap-6">
                 <div className="w-32 h-32 bg-accent/20 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Music className="w-16 h-16 text-accent/40" />
@@ -136,7 +136,7 @@ export function AlbumsView() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-card border-border p-4">
+              <Card className="glass-card p-4">
                 <p className="text-sm text-muted-foreground mb-1">Total Streams</p>
                 <p className="text-2xl font-bold text-accent">
                   {album.totalStreams >= 1000000 
@@ -146,17 +146,17 @@ export function AlbumsView() {
                       : (album.totalStreams || 0).toLocaleString()}
                 </p>
               </Card>
-              <Card className="bg-card border-border p-4">
+              <Card className="glass-card p-4">
                 <p className="text-sm text-muted-foreground mb-1">Your Revenue</p>
                 <p className="text-2xl font-bold text-accent">
                   ${artistAlbumRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </Card>
-              <Card className="bg-card border-border p-4">
+              <Card className="glass-card p-4">
                 <p className="text-sm text-muted-foreground mb-1">Number of Tracks</p>
                 <p className="text-2xl font-bold">{album.tracks?.length || 0}</p>
               </Card>
-              <Card className="bg-card border-border p-4">
+              <Card className="glass-card p-4">
                 <p className="text-sm text-muted-foreground mb-1">Status</p>
                 <p className={`text-sm font-bold px-2 py-1 rounded w-fit uppercase ${
                   album.status === 'distributed' ? 'bg-green-500/20 text-green-500' :
@@ -173,7 +173,7 @@ export function AlbumsView() {
               <h3 className="text-xl font-bold mb-4">Track Details</h3>
               <div className="space-y-3">
                 {album.tracks?.map((track: any, idx: number) => (
-                  <Card key={track.id || idx} className="bg-card border-border p-4 hover:border-accent/40 transition-colors">
+                  <Card key={track.id || idx} className="glass-card p-4 hover:border-accent/40 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-accent/10 rounded flex items-center justify-center text-accent font-bold flex-shrink-0">
                         {track.position || (idx + 1)}

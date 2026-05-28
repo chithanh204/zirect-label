@@ -13,7 +13,7 @@ const albumProcesses = [
     steps: [
       { step: 'Submit', status: 'completed', date: '2024-03-10' },
       { step: 'Making Cover Art', status: 'completed', date: '2024-03-11' },
-      { step: 'Delivering', status: 'completed', date: '2024-03-13' },
+      { step: 'Approved', status: 'completed', date: '2024-03-13' },
       { step: 'Distributed', status: 'completed', date: '2024-03-15' }
     ]
   },
@@ -25,7 +25,7 @@ const albumProcesses = [
     steps: [
       { step: 'Submit', status: 'completed', date: '2024-03-15' },
       { step: 'Making Cover Art', status: 'in_progress', date: null },
-      { step: 'Delivering', status: 'pending', date: null },
+      { step: 'Approved', status: 'pending', date: null },
       { step: 'Distributed', status: 'pending', date: null }
     ]
   },
@@ -37,7 +37,7 @@ const albumProcesses = [
     steps: [
       { step: 'Submit', status: 'completed', date: '2024-03-18' },
       { step: 'Making Cover Art', status: 'completed', date: '2024-03-19' },
-      { step: 'Delivering', status: 'rejected', date: '2024-03-20' },
+      { step: 'Approved', status: 'rejected', date: '2024-03-20' },
       { step: 'Distributed', status: 'pending', date: null }
     ]
   }
@@ -47,7 +47,7 @@ export function ProcessTracker() {
   return (
     <div className="space-y-6">
       {albumProcesses.map((album) => (
-        <Card key={album.id} className="bg-card border-border p-6">
+        <Card key={album.id} className="glass-card p-6">
           <div className="mb-6">
             <div className="flex items-start justify-between mb-2">
               <div>
@@ -81,9 +81,8 @@ export function ProcessTracker() {
                         <Icon className={`w-5 h-5 ${config.color}`} />
                       </div>
                       {!isLast && (
-                        <div className={`w-0.5 h-12 ${
-                          item.status === 'completed' ? 'bg-green-500' : 'bg-muted'
-                        }`} />
+                        <div className={`w-0.5 h-12 ${item.status === 'completed' ? 'bg-green-500' : 'bg-muted'
+                          }`} />
                       )}
                     </div>
 
@@ -91,16 +90,15 @@ export function ProcessTracker() {
                     <div className="flex-1 pt-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-bold">{item.step}</h4>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          item.status === 'completed' ? 'bg-green-500/20 text-green-500' :
-                          item.status === 'in_progress' ? 'bg-blue-500/20 text-blue-500' :
-                          item.status === 'rejected' ? 'bg-red-500/20 text-red-500' :
-                          'bg-muted/50 text-muted-foreground'
-                        }`}>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${item.status === 'completed' ? 'bg-green-500/20 text-green-500' :
+                            item.status === 'in_progress' ? 'bg-blue-500/20 text-blue-500' :
+                              item.status === 'rejected' ? 'bg-red-500/20 text-red-500' :
+                                'bg-muted/50 text-muted-foreground'
+                          }`}>
                           {item.status === 'in_progress' ? 'IN PROGRESS' :
-                           item.status === 'completed' ? 'COMPLETED' :
-                           item.status === 'rejected' ? 'REJECTED' :
-                           'PENDING'}
+                            item.status === 'completed' ? 'COMPLETED' :
+                              item.status === 'rejected' ? 'REJECTED' :
+                                'PENDING'}
                         </span>
                       </div>
                       {item.date && (

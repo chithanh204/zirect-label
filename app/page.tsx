@@ -7,7 +7,7 @@ import { Footer } from '@/components/home/footer';
 
 export default function Home() {
   return (
-    <>
+    <div className="art-bg-home art-overlay min-h-screen">
       <Header />
       <main>
         <HeroSection />
@@ -16,6 +16,6 @@ export default function Home() {
         <ContactSection />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

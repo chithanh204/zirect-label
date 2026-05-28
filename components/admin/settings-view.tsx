@@ -19,7 +19,7 @@ export function AdminSettingsView() {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Label Information */}
-      <Card className="bg-card border-border p-6">
+      <Card className="glass-card p-6">
         <h2 className="text-xl font-bold mb-6">Label Information</h2>
         
         <div className="space-y-4">
@@ -72,7 +72,7 @@ export function AdminSettingsView() {
       </Card>
 
       {/* Platform Settings */}
-      <Card className="bg-card border-border p-6">
+      <Card className="glass-card p-6">
         <h2 className="text-xl font-bold mb-6">Spotify Integration</h2>
         
         <div className="space-y-4">
@@ -94,7 +94,7 @@ export function AdminSettingsView() {
       </Card>
 
       {/* Commission Settings */}
-      <Card className="bg-card border-border p-6">
+      <Card className="glass-card p-6">
         <h2 className="text-xl font-bold mb-6">Commission Settings</h2>
         
         <div className="space-y-4">
@@ -118,7 +118,7 @@ export function AdminSettingsView() {
       </Card>
 
       {/* System Settings */}
-      <Card className="bg-card border-border p-6">
+      <Card className="glass-card p-6">
         <h2 className="text-xl font-bold mb-6">System Settings</h2>
         
         <div className="space-y-4">

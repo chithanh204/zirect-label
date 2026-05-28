@@ -115,10 +115,10 @@ class APIClient {
     });
   }
 
-  async updateAlbumStatus(id: string | number, status: string, token?: string) {
+  async updateAlbumStatus(id: string | number, status: string, data?: any, token?: string) {
     return this.request(`/albums/${id}/status`, {
       method: 'PUT',
-      body: { status },
+      body: data || { status },
       token,
     });
   }
@@ -162,6 +162,29 @@ class APIClient {
     });
   }
 
+  async updateTrackMetadata(trackId: string, data: any, token?: string) {
+    return this.request(`/albums/tracks/${trackId}/metadata`, {
+      method: 'PUT',
+      body: data,
+      token,
+    });
+  }
+
+  async addTrack(albumId: string | number, token?: string) {
+    return this.request(`/albums/${albumId}/tracks`, {
+      method: 'POST',
+      token,
+    });
+  }
+
+  async accumulateRevenue(albumId: string | number, amount: number, token?: string) {
+    return this.request(`/albums/${albumId}/revenue/accumulate`, {
+      method: 'PUT',
+      body: { amount },
+      token,
+    });
+  }
+
   async getRevenueSplits(albumId: string | number) {
     return this.request(`/albums/${albumId}/revenue-split`);
   }
@@ -187,6 +210,17 @@ class APIClient {
     return this.request(`/albums/${albumId}/payments/${platform}`, {
       method: 'POST',
       body: { amount, note },
+      token,
+    });
+  }
+
+  async getAlbumSpotifyTracks(albumId: string | number) {
+    return this.request(`/albums/${albumId}/spotify-tracks`);
+  }
+
+  async deleteAlbum(id: string | number, token?: string) {
+    return this.request(`/albums/${id}`, {
+      method: 'DELETE',
       token,
     });
   }
@@ -248,6 +282,177 @@ class APIClient {
       method: 'POST',
       token,
     });
+  }
+
+  // ========== Authentication Current User ==========
+  async getCurrentUser(token?: string) {
+    return this.request('/auth/me', { token });
+  }
+
+  // ========== Home Page & Featured Releases ==========
+  async getHomePageConfig() {
+    return this.request('/home-page/config');
+  }
+
+  async updateHomePageConfig(data: any, token?: string) {
+    return this.request('/home-page/admin/config', {
+      method: 'PUT',
+      body: data,
+      token,
+    });
+  }
+
+  async getFeaturedReleases() {
+    return this.request('/home-page/featured');
+  }
+
+  async createFeaturedRelease(data: any, token?: string) {
+    return this.request('/home-page/admin/featured', {
+      method: 'POST',
+      body: data,
+      token,
+    });
+  }
+
+  async updateFeaturedRelease(id: string, data: any, token?: string) {
+    return this.request(`/home-page/admin/featured/${id}`, {
+      method: 'PUT',
+      body: data,
+      token,
+    });
+  }
+
+  async deleteFeaturedRelease(id: string, token?: string) {
+    return this.request(`/home-page/admin/featured/${id}`, {
+      method: 'DELETE',
+      token,
+    });
+  }
+
+  async reorderFeaturedReleases(orderedIds: string[], token?: string) {
+    const releases = orderedIds.map((id, index) => ({ id, order: index }));
+    return this.request('/home-page/admin/featured/reorder', {
+      method: 'PUT',
+      body: { releases },
+      token,
+    });
+  }
+
+  // ========== Contact & Contracts ==========
+  async submitContract(data: any) {
+    return this.request('/contracts/submit', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async getContractSubmissions(token?: string) {
+    return this.request('/contracts/admin', { token });
+  }
+
+  async updateContractStatus(id: string, status: string, token?: string) {
+    return this.request(`/contracts/admin/${id}/status`, {
+      method: 'PUT',
+      body: { status },
+      token,
+    });
+  }
+
+  // ========== Reports ==========
+  async getContractReports(token?: string) {
+    return this.request('/admin/reports/contracts', { token });
+  }
+
+  async getDiscrepancyReports(token?: string) {
+    return this.request('/admin/reports/discrepancies', { token });
+  }
+
+  async getReleaseScheduleReports(token?: string) {
+    return this.request('/admin/reports/release-schedule', { token });
+  }
+
+  // ========== Album Payments & Payment Logs ==========
+  async getAlbumPaymentSummary(albumId: string | number, token?: string) {
+    return this.request(`/albums/${albumId}/payment-summary`, { token });
+  }
+
+  async addAlbumPaymentLog(albumId: string | number, data: { artistId: string, amount: number, paypalAccount?: string }, token?: string) {
+    return this.request(`/albums/${albumId}/payments`, {
+      method: 'POST',
+      body: data,
+      token,
+    });
+  }
+
+  async getAlbumPaymentLogs(albumId: string | number, token?: string) {
+    return this.request(`/albums/${albumId}/payment-logs`, { token });
+  }
+
+  // ========== Artist Admin update ==========
+  async updateArtistAdmin(id: string | number, data: { name?: string; email?: string; paypalAccount?: string; composerName?: string; isActive?: boolean; isAdmin?: boolean }, token?: string) {
+    return this.request(`/artists/${id}`, {
+      method: 'PUT',
+      body: data,
+      token,
+    });
+  }
+
+  // ========== Revenue & PayPal Payouts ==========
+  async getArtistPaymentSummaryAdmin() {
+    return this.request('/revenue/artists');
+  }
+
+  async getArtistUnpaidAlbums(artistId: string) {
+    return this.request(`/revenue/artists/${artistId}/unpaid-albums`);
+  }
+
+  async processPayout(data: { artistId: string; amount: number; paypalAccount: string; transactionId: string; receiptUrl?: string; note?: string; allocations?: any[] }) {
+    return this.request('/revenue/payout', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async verifyPayPalAdmin(artistId: string) {
+    return this.request(`/revenue/artists/${artistId}/verify-paypal`, {
+      method: 'POST',
+    });
+  }
+
+  async updateMyPayPal(paypalAccount: string) {
+    return this.request('/revenue/my-paypal', {
+      method: 'PUT',
+      body: { paypalAccount },
+    });
+  }
+
+  async getMyPayments() {
+    return this.request('/revenue/my-payments');
+  }
+
+  async importRevenueExcel(file: File): Promise<any> {
+    const url = `${this.baseURL}/revenue/import`;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    const storedToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    if (storedToken) {
+      headers['Authorization'] = `Bearer ${storedToken}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Import Error: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   // ========== Upload ==========

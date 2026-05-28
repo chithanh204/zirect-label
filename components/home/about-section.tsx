@@ -28,12 +28,12 @@ const features = [
 export function AboutSection() {
   return (
     <section id="about" className="py-20 sm:py-32 px-4">
-      <div className="max-w-7xl mx-auto bg-gradient-overlay rounded-2xl p-8 md:p-12">
+      <div className="max-w-7xl mx-auto glass rounded-2xl p-8 md:p-12 neon-border">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
           {/* Text Content */}
           <div className="space-y-6">
             <h2 className="text-4xl sm:text-5xl font-bold tracking-tighter">
-              About Zirect Label
+              About <span className="gradient-text-cyan">Zirect Label</span>
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
               Founded in 2023, Zirect Label is a forward-thinking music distribution and artist management platform. We believe every artist deserves access to global audiences and fair compensation for their work.
@@ -43,15 +43,15 @@ export function AboutSection() {
             </p>
             <div className="pt-4 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-accent rounded-full" />
+                <div className="w-2 h-2 bg-accent rounded-full shadow-[0_0_8px_rgba(0,212,255,0.5)]" />
                 <span className="text-foreground">Industry-leading royalty rates</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-accent rounded-full" />
+                <div className="w-2 h-2 bg-accent rounded-full shadow-[0_0_8px_rgba(0,212,255,0.5)]" />
                 <span className="text-foreground">Zero hidden fees policy</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-accent rounded-full" />
+                <div className="w-2 h-2 bg-accent rounded-full shadow-[0_0_8px_rgba(0,212,255,0.5)]" />
                 <span className="text-foreground">24/7 artist support</span>
               </div>
             </div>
@@ -62,8 +62,8 @@ export function AboutSection() {
             {features.map((feature, idx) => {
               const Icon = feature.icon;
               return (
-                <div key={idx} className="space-y-3 p-6 card-overlay rounded-lg border border-border/30 hover:border-accent/40 transition-colors">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                <div key={idx} className="space-y-3 p-6 glass-card rounded-lg hover:neon-glow-sm transition-all">
+                  <div className="w-12 h-12 bg-accent/10 border border-accent/20 rounded-lg flex items-center justify-center">
                     <Icon className="w-6 h-6 text-accent" />
                   </div>
                   <h3 className="font-bold text-lg">{feature.title}</h3>
@@ -76,7 +76,7 @@ export function AboutSection() {
 
         {/* Timeline */}
         <div className="space-y-8">
-          <h3 className="text-2xl font-bold">Our Journey</h3>
+          <h3 className="text-2xl font-bold">Our <span className="gradient-text-cyan">Journey</span></h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
               { year: '2023', title: 'Founded', desc: 'Zirect Label launched' },
@@ -86,7 +86,7 @@ export function AboutSection() {
             ].map((item, idx) => (
               <div key={idx} className="relative pb-8">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center text-accent font-bold flex-shrink-0">
+                  <div className="w-12 h-12 bg-accent/15 border border-accent/25 rounded-full flex items-center justify-center text-accent font-bold flex-shrink-0">
                     {idx + 1}
                   </div>
                   <div>

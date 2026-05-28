@@ -7,41 +7,44 @@ import { Sparkles, ArrowRight } from 'lucide-react';
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden pt-20 pb-32 sm:pt-32 sm:pb-40 px-4">
-      {/* Gradient background */}
+      {/* Decorative elements */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-transparent" />
+        {/* Radial glow from center */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-accent/5 rounded-full blur-3xl" />
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
       </div>
 
       <div className="max-w-4xl mx-auto text-center space-y-8">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/20 rounded-full">
+        <div className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full neon-border">
           <Sparkles className="w-4 h-4 text-accent" />
           <span className="text-sm font-medium text-accent">Elevating Music Distribution</span>
         </div>
 
         {/* Main Headline */}
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tighter leading-tight">
-          Where Music Meets
-          <span className="block bg-gradient-to-r from-accent to-accent/60 bg-clip-text text-transparent">
-            Opportunity
+          WHERE YOUR MUSIC
+          <span className="block gradient-text-cyan neon-text mt-2">
+            SOARS BEYOND LIMITS
           </span>
         </h1>
 
         {/* Subheading */}
         <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Zirect Label connects independent artists with global audiences. Distribute your music to major streaming platforms, track real-time analytics, and maximize your revenue.
+          Zirect Label connects independent artists with global audiences. A dark, powerful phonk beat. A vibrant Brazilian funk groove. Or maybe an unexpected hook that takes over the internet overnight. The spark is yours — the reach is ours.
         </p>
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <Link href="/contact">
-            <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 group">
+            <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 neon-glow group font-semibold">
               Start Distributing
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
           <Link href="#featured">
-            <Button size="lg" variant="outline">
+            <Button size="lg" variant="outline" className="border-accent/30 hover:border-accent/60 hover:bg-accent/5 transition-all">
               Explore Featured Releases
             </Button>
           </Link>
@@ -49,20 +52,20 @@ export function HeroSection() {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 pt-12 sm:pt-16">
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-bold text-accent">500+</div>
+          <div className="space-y-1 glass-card rounded-xl p-4 sm:p-6">
+            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">500+</div>
             <div className="text-sm text-muted-foreground">Artists</div>
           </div>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-bold text-accent">2.5M+</div>
+          <div className="space-y-1 glass-card rounded-xl p-4 sm:p-6">
+            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">2.5M+</div>
             <div className="text-sm text-muted-foreground">Streams</div>
           </div>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-bold text-accent">$500K+</div>
+          <div className="space-y-1 glass-card rounded-xl p-4 sm:p-6">
+            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">$500K+</div>
             <div className="text-sm text-muted-foreground">Paid Out</div>
           </div>
         </div>
       </div>
-    </section>
+    </section >
   );
 }

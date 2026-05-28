@@ -1,194 +1,119 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Music, Play, TrendingUp, Volume2 } from 'lucide-react';
+import { Music, Play, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api';
 
-interface Album {
+interface FeaturedRelease {
   id: string;
-  title: string;
-  artistName: string;
-  totalStreams: number;
-  revenue: number;
-  status: string;
-  releaseDate: string;
+  trackName: string;
+  artistNames: string;
+  spotifyLink?: string;
+  youtubeLink?: string;
   coverArt?: string;
 }
 
 export function FeaturedReleases() {
-  const [albums, setAlbums] = useState<Album[]>([]);
+  const [releases, setReleases] = useState<FeaturedRelease[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAlbums = async () => {
+    const fetchFeatured = async () => {
       try {
         setLoading(true);
-        const response = await apiClient.getAllAlbums();
-
-        // Get first 4 albums for featured display
-        const featuredAlbums = (response.data?.albums || []).slice(0, 4);
-        setAlbums(featuredAlbums);
+        const response = await apiClient.getFeaturedReleases();
+        if (response && (response as any).success) {
+          setReleases((response as any).data || []);
+        }
       } catch (err) {
-        console.error('Failed to fetch albums:', err);
+        console.error('Failed to fetch featured releases:', err);
         setError('Failed to load featured releases');
-
-        // Fallback to mock data if API fails
-        setAlbums([
-          {
-            id: '1',
-            title: 'Midnight Dreams',
-            artistName: 'Luna Echo',
-            totalStreams: 145200,
-            revenue: 1245,
-            status: 'distributed',
-            releaseDate: '2024-03-15',
-          },
-          {
-            id: '2',
-            title: 'Urban Vibes',
-            artistName: 'City Beats',
-            totalStreams: 98500,
-            revenue: 892,
-            status: 'distributed',
-            releaseDate: '2024-03-12',
-          },
-          {
-            id: '3',
-            title: 'Sunset Paradise',
-            artistName: 'Tropical Waves',
-            totalStreams: 76300,
-            revenue: 645,
-            status: 'distributed',
-            releaseDate: '2024-03-10',
-          },
-          {
-            id: '4',
-            title: 'Ethereal Nights',
-            artistName: 'Cosmic Sound',
-            totalStreams: 62100,
-            revenue: 512,
-            status: 'distributed',
-            releaseDate: '2024-03-08',
-          }
-        ]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAlbums();
+    fetchFeatured();
   }, []);
+
   return (
-    <section id="featured" className="py-20 sm:py-32 px-4">
-      <div className="max-w-7xl mx-auto">
+    <section id="featured" className="py-20 sm:py-32 px-4 relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/5 via-background to-background">
+      {/* Decorative glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Section Header */}
-        <div className="space-y-4 mb-12">
-          <h2 className="text-4xl sm:text-5xl font-bold tracking-tighter">
-            Featured Releases
+        <div className="mb-16 text-center">
+          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-wider uppercase text-white">
+            OUR FEATURED TRACKS
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl">
-            Discover the latest tracks from our growing roster of artists. Each release is carefully distributed across all major streaming platforms.
-          </p>
         </div>
 
         {loading ? (
-          <div className="text-center py-12">Loading releases...</div>
-        ) : albums.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">No releases available yet</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-8 gap-y-12">
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div key={i} className="animate-pulse flex flex-col items-center">
+                <div className="aspect-square w-full bg-accent/5 rounded-xl border border-accent/10 mb-4" />
+                <div className="h-4 bg-accent/5 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-accent/5 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-12 text-muted-foreground">{error}</div>
+        ) : releases.length === 0 ? (
+          <div className="text-center py-20 border border-dashed border-accent/20 rounded-2xl bg-accent/5 max-w-lg mx-auto">
+            <Music className="w-12 h-12 text-accent/30 mx-auto mb-4" />
+            <h3 className="font-semibold text-lg mb-1">No featured releases</h3>
+            <p className="text-sm text-muted-foreground px-4">Check back soon for new tracks in the distribution spotlight.</p>
+          </div>
         ) : (
-          <>
-            {/* Featured Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-              {/* Large Featured Card */}
-              {albums[0] && (
-                <div className="md:col-span-2 bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20 rounded-xl p-8 hover:border-accent/40 transition-colors group overflow-hidden">
-                  <div className="flex flex-col sm:flex-row gap-8">
-                    <div className="w-32 h-32 sm:w-40 sm:h-40 bg-accent/20 rounded-lg flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Music className="w-16 h-16 text-accent/40" />
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="inline-block px-3 py-1 bg-accent/20 rounded-full text-sm font-medium text-accent mb-3">
-                          Trending Now
-                        </div>
-                        <h3 className="text-3xl font-bold mb-2">{albums[0].title}</h3>
-                        <p className="text-muted-foreground mb-4">{albums[0].artistName}</p>
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <div>
-                            <div className="text-accent font-bold">{(albums[0].totalStreams / 1000).toFixed(1)}K</div>
-                            <div className="text-muted-foreground">Streams</div>
-                          </div>
-                          <div>
-                            <div className="text-accent font-bold">${(albums[0].revenue / 1000).toFixed(1)}K</div>
-                            <div className="text-muted-foreground">Revenue</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-3 pt-4">
-                        <Button className="bg-accent text-accent-foreground hover:bg-accent/90" size="sm">
-                          <Play className="w-4 h-4 mr-2" />
-                          Listen on Spotify
-                        </Button>
-                        <Button variant="outline" size="sm">View Details</Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Release Cards Grid */}
-              {albums.slice(1).map((album) => (
-                <div
-                  key={album.id}
-                  className="bg-card border border-border rounded-lg p-6 hover:border-accent/40 hover:bg-accent/5 transition-all group cursor-pointer"
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-8 gap-y-12">
+            {releases.slice(0, 15).map((release) => {
+              const platformLink = release.spotifyLink || release.youtubeLink || '#';
+              return (
+                <a
+                  key={release.id}
+                  href={platformLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2"
                 >
-                  <div className="flex gap-4 mb-4">
-                    <div className="w-20 h-20 bg-accent/20 rounded-lg flex-shrink-0 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Music className="w-10 h-10 text-accent/40" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg leading-tight mb-1">{album.title}</h3>
-                      <p className="text-muted-foreground text-sm mb-2">{album.artistName}</p>
-                      <div className="inline-block px-2 py-1 bg-accent/20 rounded text-xs font-medium text-accent">
-                        {album.status.toUpperCase()}
+                  {/* Artwork Container */}
+                  <div className="aspect-square w-full rounded-xl overflow-hidden relative shadow-lg mb-4 bg-gradient-to-br from-accent/10 to-accent/5 flex items-center justify-center border border-white/5">
+                    {release.coverArt ? (
+                      <img
+                        src={release.coverArt}
+                        alt={release.trackName}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <Music className="w-12 h-12 text-accent/30 group-hover:scale-105 transition-transform duration-500" />
+                    )}
+
+                    {/* Subtle Overlay with play button on hover */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white scale-75 group-hover:scale-100 transition-all duration-300">
+                        <Play className="w-6 h-6 fill-current ml-0.5" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3 pt-4 border-t border-border">
-                    <div className="flex justify-between text-sm">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Volume2 className="w-4 h-4" />
-                        Streams
-                      </div>
-                      <span className="font-bold text-accent">{(album.totalStreams / 1000).toFixed(1)}K</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <TrendingUp className="w-4 h-4" />
-                        Revenue
-                      </div>
-                      <span className="font-bold text-accent">${(album.revenue / 1000).toFixed(1)}K</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* View All Button */}
-            <div className="text-center">
-              <Button variant="outline" size="lg">
-                View All Releases
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-          </>
+                  {/* Metadata */}
+                  <h3 className="font-bold text-sm sm:text-base text-white leading-snug truncate max-w-full group-hover:text-cyan-400 transition-colors px-1" title={release.trackName}>
+                    {release.trackName}
+                  </h3>
+                  <p className="text-xs text-slate-400 truncate max-w-full mt-1 px-1" title={release.artistNames}>
+                    {release.artistNames}
+                  </p>
+                </a>
+              );
+            })}
+          </div>
         )}
       </div>
     </section>
   );
 }
-
-import { ArrowRight } from 'lucide-react';
