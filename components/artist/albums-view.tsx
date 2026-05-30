@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Music, ChevronRight, Download, Share2, Loader2 } from 'lucide-react';
+import { Music, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { apiClient } from '@/lib/api';
@@ -87,9 +87,13 @@ export function AlbumsView() {
             {/* Album Header */}
             <Card className="glass-card p-6">
               <div className="flex flex-col sm:flex-row gap-6">
-                <div className="w-32 h-32 bg-accent/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Music className="w-16 h-16 text-accent/40" />
-                </div>
+                {album.coverArt ? (
+                  <img src={album.coverArt} alt={album.title} className="w-32 h-32 rounded-lg object-cover border border-border flex-shrink-0" />
+                ) : (
+                  <div className="w-32 h-32 bg-accent/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Music className="w-16 h-16 text-accent/40" />
+                  </div>
+                )}
                 
                 <div className="flex-1 space-y-4">
                   <div>
@@ -113,39 +117,27 @@ export function AlbumsView() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {album.platformRevenues?.map((pr: any) => (
-                      <span key={pr.platform} className="px-3 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium uppercase">
-                        {pr.platform.replace('_', ' ')}
+                    {Array.from(new Set(
+                      album.platformRevenues
+                        ?.filter((pr: any) => {
+                          const plat = pr.platform.toLowerCase();
+                          return plat.includes('spotify') || plat.includes('youtube');
+                        })
+                        ?.map((pr: any) => pr.platform.toLowerCase().includes('spotify') ? 'Spotify' : 'YouTube Music') || []
+                    )).map((displayPlatform: any) => (
+                      <span key={displayPlatform} className="px-3 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium uppercase">
+                        {displayPlatform}
                       </span>
                     ))}
                   </div>
 
-                  <div className="flex gap-3">
-                    <Button className="bg-accent text-accent-foreground hover:bg-accent/90" size="sm">
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Report
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </Button>
-                  </div>
+
                 </div>
               </div>
             </Card>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="glass-card p-4">
-                <p className="text-sm text-muted-foreground mb-1">Total Streams</p>
-                <p className="text-2xl font-bold text-accent">
-                  {album.totalStreams >= 1000000 
-                    ? `${(album.totalStreams / 1000000).toFixed(1)}M` 
-                    : album.totalStreams >= 1000 
-                      ? `${(album.totalStreams / 1000).toFixed(1)}K` 
-                      : (album.totalStreams || 0).toLocaleString()}
-                </p>
-              </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className="glass-card p-4">
                 <p className="text-sm text-muted-foreground mb-1">Your Revenue</p>
                 <p className="text-2xl font-bold text-accent">
@@ -175,33 +167,26 @@ export function AlbumsView() {
                 {album.tracks?.map((track: any, idx: number) => (
                   <Card key={track.id || idx} className="glass-card p-4 hover:border-accent/40 transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-accent/10 rounded flex items-center justify-center text-accent font-bold flex-shrink-0">
+                      {/* Track Position */}
+                      <span className="text-xs font-mono text-muted-foreground w-4 text-center">
                         {track.position || (idx + 1)}
-                      </div>
+                      </span>
+
+                      {/* Album Cover Art for Track */}
+                      {album.coverArt ? (
+                        <img src={album.coverArt} alt={album.title} className="w-10 h-10 rounded object-cover border border-border flex-shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 bg-accent/10 rounded flex items-center justify-center flex-shrink-0">
+                          <Music className="w-5 h-5 text-accent/40" />
+                        </div>
+                      )}
                       
                       <div className="flex-1 min-w-0">
                         <p className="font-bold truncate">{track.title}</p>
                         <p className="text-xs text-muted-foreground font-mono">{track.isrc || 'ISRC Pending'}</p>
                       </div>
 
-                      <div className="hidden sm:flex items-center gap-8 text-sm">
-                        <div className="text-center">
-                          <p className="text-muted-foreground text-xs">Duration</p>
-                          <p className="font-bold">
-                            {Math.floor((track.duration || 0) / 60)}:{(track.duration || 0) % 60 < 10 ? '0' : ''}{(track.duration || 0) % 60}
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-muted-foreground text-xs">Streams</p>
-                          <p className="font-bold text-accent">
-                            {track.streams >= 1000000 
-                              ? `${(track.streams / 1000000).toFixed(1)}M` 
-                              : track.streams >= 1000 
-                                ? `${(track.streams / 1000).toFixed(1)}K` 
-                                : (track.streams || 0).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
+
 
                       <Button variant="ghost" size="sm">
                         <ChevronRight className="w-4 h-4" />

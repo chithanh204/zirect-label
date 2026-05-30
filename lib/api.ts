@@ -380,6 +380,10 @@ class APIClient {
     return this.request('/admin/reports/release-schedule', { token });
   }
 
+  async getAdminAnalytics(token?: string) {
+    return this.request('/admin/reports/analytics', { token });
+  }
+
   // ========== Album Payments & Payment Logs ==========
   async getAlbumPaymentSummary(albumId: string | number, token?: string) {
     return this.request(`/albums/${albumId}/payment-summary`, { token });
@@ -439,10 +443,13 @@ class APIClient {
     return this.request('/revenue/my-payments');
   }
 
-  async importRevenueExcel(file: File): Promise<any> {
+  async importRevenueExcel(file: File, paymentMonth?: string): Promise<any> {
     const url = `${this.baseURL}/revenue/import`;
     const formData = new FormData();
     formData.append('file', file);
+    if (paymentMonth) {
+      formData.append('paymentMonth', paymentMonth);
+    }
 
     const headers: Record<string, string> = {};
     const storedToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;

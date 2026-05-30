@@ -251,34 +251,33 @@ export function DashboardOverview() {
                 return (
                   <Card key={album.id} className="glass-card p-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-bold text-lg">{album.title}</h3>
-                          <span className={`px-2 py-1 rounded text-xs font-medium uppercase border ${
-                            album.status === 'distributed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' :
-                            album.status === 'draft' ? 'bg-gray-500/15 text-gray-400 border-gray-500/20' :
-                            'bg-amber-500/15 text-amber-400 border-amber-500/20'
-                          }`}>
-                            {album.status === 'draft' ? 'MAKING COVER ART' : album.status.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>UPC: <span className="font-mono text-foreground">{album.upc || 'Pending'}</span></p>
-                          <p>Released: {album.releaseDate ? new Date(album.releaseDate).toLocaleDateString() : 'TBA'}</p>
+                      <div className="flex items-center gap-4 flex-1">
+                        {album.coverArt ? (
+                          <img src={album.coverArt} alt={album.title} className="w-16 h-16 rounded-lg object-cover border border-border flex-shrink-0" />
+                        ) : (
+                          <div className="w-16 h-16 bg-accent/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Music className="w-8 h-8 text-accent/40" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-bold text-lg">{album.title}</h3>
+                            <span className={`px-2 py-1 rounded text-xs font-medium uppercase border ${
+                              album.status === 'distributed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' :
+                              album.status === 'draft' ? 'bg-gray-500/15 text-gray-400 border-gray-500/20' :
+                              'bg-amber-500/15 text-amber-400 border-amber-500/20'
+                            }`}>
+                              {album.status === 'draft' ? 'MAKING COVER ART' : album.status.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p>UPC: <span className="font-mono text-foreground">{album.upc || 'Pending'}</span></p>
+                            <p>Released: {album.releaseDate ? new Date(album.releaseDate).toLocaleDateString() : 'TBA'}</p>
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-4 sm:text-right">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Streams</p>
-                          <p className="font-bold text-accent">
-                            {album.totalStreams >= 1000000 
-                              ? `${(album.totalStreams / 1000000).toFixed(1)}M` 
-                              : album.totalStreams >= 1000 
-                                ? `${(album.totalStreams / 1000).toFixed(1)}K` 
-                                : (album.totalStreams || 0).toLocaleString()}
-                          </p>
-                        </div>
+                      <div className="grid grid-cols-2 gap-4 sm:text-right">
                         <div>
                           <p className="text-xs text-muted-foreground">Your Revenue</p>
                           <p className="font-bold text-accent">

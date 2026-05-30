@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, Users, Music, FileText, Settings, LogOut, Menu, X, Home, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Users, Music, FileText, Settings, LogOut, Menu, X, Home, DollarSign, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -25,12 +25,12 @@ export function AdminSidebar() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
+    { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
     { icon: Users, label: 'Artists', href: '/admin/artists' },
     { icon: Music, label: 'Albums', href: '/admin/albums' },
     { icon: DollarSign, label: 'Revenue', href: '/admin/revenue' },
     { icon: FileText, label: 'Reports', href: '/admin/reports' },
-    { icon: Home, label: 'Edit Home Page', href: '/admin/edit-home-page' },
-    { icon: Settings, label: 'Settings', href: '/admin/settings' },
+    { icon: Settings, label: 'Setting Label', href: '/admin/setting-label' },
   ];
 
   return (

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { apiClient } from '@/lib/api';
-import { Music, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, Upload, Loader2 } from 'lucide-react';
+import { Music, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, Upload, Loader2, ShieldAlert, KeyRound } from 'lucide-react';
 
 interface FeaturedRelease {
   id: string;
@@ -21,14 +21,20 @@ interface FeaturedRelease {
   order: number;
 }
 
-export default function EditHomePage() {
+export default function SettingLabelPage() {
   const { toast } = useToast();
   
-  // Home Page states
+  // Home Page branding states
   const [logoUrl, setLogoUrl] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
+
+  // Password change states
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Featured Releases states
   const [releases, setReleases] = useState<FeaturedRelease[]>([]);
@@ -175,6 +181,58 @@ export default function EditHomePage() {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Validation Error',
+        description: 'New password and confirmation do not match.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Validation Error',
+        description: 'Password must be at least 6 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      const token = localStorage.getItem('authToken') || undefined;
+      const res: any = await apiClient.updatePassword({ currentPassword, newPassword }, token);
+      
+      if (res && res.success) {
+        toast({
+          title: 'Password Updated',
+          description: 'Admin password changed successfully.',
+        });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast({
+          title: 'Error',
+          description: res.message || 'Incorrect current password or update failed.',
+          variant: 'destructive',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update password.',
+        variant: 'destructive',
+      });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const handleOpenAddDialog = () => {
     setEditingRelease(null);
     setTrackName('');
@@ -228,7 +286,6 @@ export default function EditHomePage() {
           });
         }
       } else {
-        // Next order position
         const nextOrder = releases.length > 0 ? Math.max(...releases.map(r => r.order)) + 1 : 0;
         const res: any = await apiClient.createFeaturedRelease({ ...payload, order: nextOrder }, token);
         if (res && res.success) {
@@ -278,15 +335,11 @@ export default function EditHomePage() {
 
     if (targetIndex < 0 || targetIndex >= newReleases.length) return;
 
-    // Swap elements
     const temp = newReleases[index];
     newReleases[index] = newReleases[targetIndex];
     newReleases[targetIndex] = temp;
 
-    // Recalculate orders
     const orderedIds = newReleases.map(r => r.id);
-    
-    // Optimistic UI update
     setReleases(newReleases);
 
     try {
@@ -316,13 +369,14 @@ export default function EditHomePage() {
           <div className="space-y-8 max-w-7xl">
             {/* Header */}
             <div>
-              <h1 className="text-4xl font-bold tracking-tighter">Edit <span className="gradient-text-cyan">Home Page</span></h1>
-              <p className="text-muted-foreground mt-2">Manage your public website logo, branding headers, and featured distribution grid.</p>
+              <h1 className="text-4xl font-bold tracking-tighter">Setting <span className="gradient-text-cyan">Label</span></h1>
+              <p className="text-muted-foreground mt-2">Manage your public website branding, brand settings, and admin account security.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Branding Config Form */}
-              <div className="lg:col-span-1">
+              {/* Branding and Security Config Forms (Left Column) */}
+              <div className="lg:col-span-1 space-y-8">
+                {/* Branding Card */}
                 <Card className="glass shadow-xl border-accent/15">
                   <CardHeader>
                     <CardTitle className="text-xl">Website Branding</CardTitle>
@@ -399,16 +453,74 @@ export default function EditHomePage() {
                       <Button
                         type="submit"
                         disabled={savingConfig}
-                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90 neon-glow-sm"
                       >
                         {savingConfig ? 'Saving Branding...' : 'Save Branding Changes'}
                       </Button>
                     </form>
                   </CardContent>
                 </Card>
+
+                {/* Change Password Card */}
+                <Card className="glass shadow-xl border-accent/15">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <KeyRound className="w-5 h-5 text-accent" />
+                      <CardTitle className="text-xl">Admin Security</CardTitle>
+                    </div>
+                    <CardDescription>Update your administrator password.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold">Current Password</label>
+                        <Input
+                          required
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="bg-[rgba(8,20,45,0.4)] border-accent/15 focus:border-accent/40"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold">New Password</label>
+                        <Input
+                          required
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="bg-[rgba(8,20,45,0.4)] border-accent/15 focus:border-accent/40"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold">Confirm New Password</label>
+                        <Input
+                          required
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="bg-[rgba(8,20,45,0.4)] border-accent/15 focus:border-accent/40"
+                        />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={changingPassword}
+                        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                      >
+                        {changingPassword ? 'Updating Password...' : 'Change Password'}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Featured Releases List */}
+              {/* Featured Releases List (Right Column) */}
               <div className="lg:col-span-2">
                 <Card className="glass shadow-xl border-accent/15">
                   <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-4">

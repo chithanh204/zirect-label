@@ -118,10 +118,22 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
   const [isSavingArtistInfo, setIsSavingArtistInfo] = useState(false);
 
   useEffect(() => {
-    fetchAlbumDetail();
+    fetchAlbumDetail(true);
     fetchAllArtists();
-    fetchPaymentSummary();
   }, [albumId]);
+
+  // Synchronize splits state whenever payment summary is loaded/updated
+  useEffect(() => {
+    if (paymentSummary?.artists) {
+      const systemSplits = paymentSummary.artists
+        .filter((a: any) => a.artistId)
+        .map((a: any) => ({
+          artistId: a.artistId,
+          percentage: parseFloat(a.percentage as any) || 0
+        }));
+      setSplits(systemSplits);
+    }
+  }, [paymentSummary]);
 
   // Synchronize displayArtist with primary artists on Edit Album Metadata Dialog
   useEffect(() => {
@@ -370,7 +382,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
     try {
       const res = await apiClient.addTrack(albumId) as any;
       if (res?.success) {
-        alert('Đã thêm track mới thành công!');
         fetchAlbumDetail();
       } else {
         alert(res?.message || 'Không thể thêm track mới');
@@ -436,11 +447,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
       const res = await apiClient.getAlbumPaymentSummary(albumId) as any;
       if (res?.success && res.data) {
         setPaymentSummary(res.data);
-        // Auto-initialize splits from payment summary for system artists
-        const systemSplits = res.data.artists
-          .filter((a: any) => a.isSystem)
-          .map((a: any) => ({ artistId: a.artistId, percentage: a.percentage }));
-        setSplits(systemSplits);
       }
     } catch (err) {
       console.error('Error fetching payment summary:', err);
@@ -449,9 +455,9 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
     }
   };
 
-  const fetchAlbumDetail = async () => {
+  const fetchAlbumDetail = async (isFirstLoad = false) => {
     try {
-      setLoading(true);
+      if (isFirstLoad) setLoading(true);
       const res = await apiClient.getAlbumDetail(albumId) as any;
       if (res?.success && res.data) {
         setAlbum(res.data);
@@ -473,10 +479,8 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
           genre: res.data.genre || '',
           subgenre: res.data.subgenre || '',
         });
-        // Initialize splits for UI editing
-        if (res.data.revenueSplits) {
-          setSplits(res.data.revenueSplits.map((s: any) => ({ artistId: s.artistId, percentage: s.percentage })));
-        }
+        // Fetch payment summary to sync splits and payment details
+        fetchPaymentSummary();
       } else {
         console.error('Failed to fetch album:', res);
         setError(res?.message || 'Album not found');
@@ -485,7 +489,7 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
       console.error('Error fetching album details:', err);
       setError(err?.message || 'Failed to fetch album details');
     } finally {
-      setLoading(false);
+      if (isFirstLoad) setLoading(false);
     }
   };
 
@@ -810,7 +814,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
         setIsEditTrackOpen(false);
         fetchAlbumDetail();
         fetchPaymentSummary();
-        alert('Track metadata updated successfully');
       } else {
         alert(res?.message || 'Failed to update track metadata');
       }
@@ -921,17 +924,17 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
   };
 
   const handleSaveSplits = async () => {
-    const total = splits.reduce((sum, s) => sum + s.percentage, 0);
+    const validSplits = splits.filter(s => s.artistId);
+    const total = validSplits.reduce((sum, s) => sum + s.percentage, 0);
     if (Math.abs(total - 100) > 0.001) {
       alert(`Tổng phần trăm chia sẻ doanh thu phải bằng chính xác 100% (hiện tại là ${total.toFixed(1)}%)`);
       return;
     }
     try {
-      const res = await apiClient.updateRevenueSplits(albumId, splits) as any;
+      const res = await apiClient.updateRevenueSplits(albumId, validSplits) as any;
       if (res?.success) {
         alert('Đã cập nhật tỷ lệ chia sẻ doanh thu thành công!');
         fetchAlbumDetail();
-        fetchPaymentSummary();
       } else {
         alert(res?.message || 'Cập nhật tỷ lệ chia sẻ thất bại');
       }
@@ -1418,7 +1421,7 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
                   {paymentSummary?.artists?.map((artistSummary: any, idx: number) => {
                     const outstanding = artistSummary.totalUnpaid || 0;
                     const currentSplit = splits.find(s => s.artistId === artistSummary.artistId)?.percentage || 0;
-                    const isEditing = editingArtistId === artistSummary.artistId;
+                    const isEditing = artistSummary.artistId !== null && editingArtistId === artistSummary.artistId;
 
                     return (
                       <tr key={artistSummary.artistId} className="hover:bg-accent/5 transition-colors">

@@ -57,6 +57,12 @@ export function AlbumsManagement() {
   const [statusUpdateData, setStatusUpdateData] = useState<{ albumId: string; albumTitle: string; newStatus: string } | null>(null);
   const [statusUpdateFields, setStatusUpdateFields] = useState<any>({});
 
+  // Status update dialog cover art states
+  const [statusCoverPreview, setStatusCoverPreview] = useState<string | null>(null);
+  const [isStatusUploading, setIsStatusUploading] = useState(false);
+  const [statusUploadError, setStatusUploadError] = useState<string | null>(null);
+  const statusFileInputRef = useRef<HTMLInputElement>(null);
+
   // Edit album dialog
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editAlbumData, setEditAlbumData] = useState<any>(null);
@@ -398,6 +404,19 @@ export function AlbumsManagement() {
     if (file) handleEditFileSelect(file);
   }, [handleEditFileSelect]);
 
+  // Cover art upload for status updates
+  const handleStatusFileSelect = useCallback(async (file: File) => {
+    await handleImageUpload(file, setStatusCoverPreview, setIsStatusUploading, setStatusUploadError, (url) => {
+      setStatusUpdateFields((prev: any) => ({ ...prev, coverArt: url }));
+    });
+  }, []);
+
+  const removeStatusCover = () => {
+    setStatusCoverPreview(null);
+    setStatusUpdateFields((prev: any) => ({ ...prev, coverArt: '' }));
+    if (statusFileInputRef.current) statusFileInputRef.current.value = '';
+  };
+
   const removeCover = () => {
     setCoverPreview(null);
     setFormData(prev => ({ ...prev, coverArt: '' }));
@@ -660,7 +679,15 @@ export function AlbumsManagement() {
         albumTitle: album.title,
         newStatus: newStatus,
       });
-      setStatusUpdateFields({});
+      setStatusUpdateFields({
+        upc: album.upc || '',
+        albumId: album.albumId || '',
+        youtubeId: album.youtubeId || '',
+        rejectionReason: album.rejectionReason || '',
+        coverArt: album.coverArt || '',
+      });
+      setStatusCoverPreview(album.coverArt || null);
+      setStatusUploadError(null);
       setIsStatusUpdateDialogOpen(true);
     } else {
       await submitStatusUpdate(album.id, newStatus, {});
@@ -674,6 +701,7 @@ export function AlbumsManagement() {
       if (fields.albumId) updateData.albumId = fields.albumId;
       if (fields.youtubeId) updateData.youtubeId = fields.youtubeId;
       if (fields.rejectionReason) updateData.rejectionReason = fields.rejectionReason;
+      if (fields.coverArt !== undefined) updateData.coverArt = fields.coverArt || null;
 
       const res = await apiClient.updateAlbumStatus(albumId, newStatus, updateData) as any;
       if (res?.success) {
@@ -1091,72 +1119,79 @@ export function AlbumsManagement() {
                   </td>
                 </tr>
               ) : filteredAlbums.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                    {searchTerm || filterStatus ? 'No albums match your filter' : 'No albums found'}
-                  </td>
-                </tr>
-              ) : (
-                filteredAlbums.map((album: any, idx: number) => {
-                  const config = statusConfig[album.status] || statusConfig.draft;
-                  return (
-                    <tr
-                      key={album.id}
-                      className={`border-b border-border hover:bg-accent/5 transition-colors ${idx === filteredAlbums.length - 1 ? 'border-0' : ''}`}
-                    >
+                <>
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-muted-foreground">
+                      {searchTerm || filterStatus ? 'No albums match your filter' : 'No albums found'}
+                    </td>
+                  </tr>
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={`empty-${idx}`} className="border-b border-border/20 last:border-0 opacity-10">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {album.coverArt ? (
-                            <img src={album.coverArt} alt={album.title} className="w-10 h-10 rounded object-cover border border-border" />
-                          ) : (
-                            <div className="w-10 h-10 bg-accent/20 rounded flex items-center justify-center flex-shrink-0">
-                              <Music className="w-5 h-5 text-accent/40" />
-                            </div>
-                          )}
-                          <p className="font-bold">{album.title}</p>
+                          <div className="w-10 h-10 bg-accent/5 rounded border border-border/10 flex items-center justify-center">
+                            <Music className="w-5 h-5 text-accent/10" />
+                          </div>
+                          <div className="h-4 w-28 bg-muted/20 rounded" />
                         </div>
                       </td>
-                      <td className="px-6 py-4">{album.displayArtist || album.artistName}</td>
-                      <td className="px-6 py-4">
-                        <div className="relative inline-block text-left">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveDropdownAlbumId(activeDropdownAlbumId === album.id ? null : album.id);
-                            }}
-                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 ${config.bgColor} ${config.color} hover:opacity-80`}
-                          >
-                            <config.icon className="w-3.5 h-3.5 animate-pulse" />
-                            {config.label}
-                            <span className="text-[10px] opacity-65">▼</span>
-                          </button>
-
-                          {activeDropdownAlbumId === album.id && (
-                            <div
-                              className="absolute left-0 mt-2 w-64 rounded-xl shadow-2xl bg-card border border-border ring-1 ring-black ring-opacity-5 focus:outline-none z-50 py-1.5 backdrop-blur-md bg-opacity-95"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground border-b border-border uppercase tracking-widest">
-                                Tùy chọn Album
+                      <td className="px-6 py-4"><div className="h-4 w-24 bg-muted/20 rounded" /></td>
+                      <td className="px-6 py-4"><div className="h-6 w-20 bg-muted/20 rounded-full" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-8 bg-muted/20 rounded" /></td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <div className="h-8 w-24 bg-muted/20 rounded-md" />
+                          <div className="h-8 w-16 bg-muted/20 rounded-md" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {filteredAlbums.map((album: any, idx: number) => {
+                    const config = statusConfig[album.status] || statusConfig.draft;
+                    return (
+                      <tr
+                        key={album.id}
+                        className={`border-b border-border hover:bg-accent/5 transition-colors ${idx === filteredAlbums.length - 1 && filteredAlbums.length >= 6 ? 'border-0' : ''}`}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            {album.coverArt ? (
+                              <img src={album.coverArt} alt={album.title} className="w-10 h-10 rounded object-cover border border-border" />
+                            ) : (
+                              <div className="w-10 h-10 bg-accent/20 rounded flex items-center justify-center flex-shrink-0">
+                                <Music className="w-5 h-5 text-accent/40" />
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveDropdownAlbumId(null);
-                                  handleOpenEditDialog(album);
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 font-semibold transition-colors duration-150"
-                              >
-                                <Edit className="w-4 h-4 text-accent" />
-                                Update &amp; Edit Metadata
-                              </button>
+                            )}
+                            <p className="font-bold">{album.title}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">{album.displayArtist || album.artistName}</td>
+                        <td className="px-6 py-4">
+                          <div className="relative inline-block text-left">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownAlbumId(activeDropdownAlbumId === album.id ? null : album.id);
+                              }}
+                              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 ${config.bgColor} ${config.color} hover:opacity-80`}
+                            >
+                              <config.icon className="w-3.5 h-3.5 animate-pulse" />
+                              {config.label}
+                            </button>
 
-                              <div className="border-t border-border mt-1.5 pt-1.5">
-                                <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                                  Cập nhật trạng thái nhanh
+                            {activeDropdownAlbumId === album.id && (
+                              <div
+                                className="absolute left-0 mt-2 w-56 rounded-xl shadow-2xl bg-card border border-border ring-1 ring-black ring-opacity-5 focus:outline-none z-50 py-1.5 backdrop-blur-md bg-opacity-95"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border pb-1.5 mb-1">
+                                  Cập nhật trạng thái
                                 </div>
-                                <div className="mt-1 space-y-0.5">
+                                <div className="space-y-0.5">
                                   {Object.entries(statusConfig).map(([key, c]) => {
                                     const disabled = isStatusDisabled(album.status, key);
                                     const StatusIcon = c.icon;
@@ -1173,8 +1208,8 @@ export function AlbumsManagement() {
                                           ${disabled ? 'opacity-35 cursor-not-allowed' : 'hover:bg-accent hover:text-accent-foreground'}
                                           ${album.status === key ? 'font-bold text-accent bg-accent/10' : 'text-foreground'}`}
                                       >
-                                        <div className="flex items-center gap-2">
-                                          <StatusIcon className={`w-4 h-4 ${c.color}`} />
+                                        <div className="flex items-center gap-2 font-semibold">
+                                          <StatusIcon className={`w-3.5 h-3.5 ${c.color}`} />
                                           <span>{c.label}</span>
                                         </div>
                                         {album.status === key && <span className="text-xs text-accent">✓</span>}
@@ -1183,67 +1218,88 @@ export function AlbumsManagement() {
                                   })}
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">{album.tracks?.length || 0}</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center gap-2 justify-end">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => window.location.href = `/admin/albums/${album.id}`}
-                            className="text-xs"
-                          >
-                            <Eye className="w-3 h-3 mr-1" />
-                            View Details
-                          </Button>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="text-xs"
-                              >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                Delete
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="glass-card max-w-sm">
-                              <DialogHeader>
-                                <DialogTitle>Delete Album</DialogTitle>
-                              </DialogHeader>
-                              <p className="text-sm text-muted-foreground">
-                                Are you sure you want to delete <strong>{album.title}</strong>? This action cannot be undone.
-                              </p>
-                              <div className="flex gap-2 justify-end pt-4">
-                                <Button variant="outline">Cancel</Button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">{album.tracks?.length || 0}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.location.href = `/admin/albums/${album.id}`}
+                              className="text-xs"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              View Details
+                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
                                 <Button
+                                  size="sm"
                                   variant="destructive"
-                                  onClick={async () => {
-                                    try {
-                                      const res = await apiClient.deleteAlbum(album.id) as any;
-                                      if (res?.success) {
-                                        refetch();
-                                      } else {
-                                        alert(res?.message || 'Failed to delete album');
-                                      }
-                                    } catch (error) {
-                                      alert(error instanceof Error ? error.message : 'Failed to delete album');
-                                    }
-                                  }}
+                                  className="text-xs"
                                 >
+                                  <Trash2 className="w-3 h-3 mr-1" />
                                   Delete
                                 </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                              </DialogTrigger>
+                              <DialogContent className="glass-card max-w-sm">
+                                <DialogHeader>
+                                  <DialogTitle>Delete Album</DialogTitle>
+                                </DialogHeader>
+                                <p className="text-sm text-muted-foreground">
+                                  Are you sure you want to delete <strong>{album.title}</strong>? This action cannot be undone.
+                                </p>
+                                <div className="flex gap-2 justify-end pt-4">
+                                  <Button variant="outline">Cancel</Button>
+                                  <Button
+                                    variant="destructive"
+                                    onClick={async () => {
+                                      try {
+                                        const res = await apiClient.deleteAlbum(album.id) as any;
+                                        if (res?.success) {
+                                          refetch();
+                                        } else {
+                                          alert(res?.message || 'Failed to delete album');
+                                        }
+                                      } catch (error) {
+                                        alert(error instanceof Error ? error.message : 'Failed to delete album');
+                                      }
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {Array.from({ length: Math.max(0, 6 - filteredAlbums.length) }).map((_, idx) => (
+                    <tr key={`empty-${idx}`} className="border-b border-border/20 last:border-0 opacity-10">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-accent/5 rounded border border-border/10 flex items-center justify-center">
+                            <Music className="w-5 h-5 text-accent/10" />
+                          </div>
+                          <div className="h-4 w-28 bg-muted/20 rounded" />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4"><div className="h-4 w-24 bg-muted/20 rounded" /></td>
+                      <td className="px-6 py-4"><div className="h-6 w-20 bg-muted/20 rounded-full" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-8 bg-muted/20 rounded" /></td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <div className="h-8 w-24 bg-muted/20 rounded-md" />
+                          <div className="h-8 w-16 bg-muted/20 rounded-md" />
                         </div>
                       </td>
                     </tr>
-                  );
-                })
+                  ))}
+                </>
               )}
             </tbody>
           </table>
@@ -1259,17 +1315,74 @@ export function AlbumsManagement() {
           </DialogHeader>
           <div className="space-y-4">
             {statusUpdateData?.newStatus === 'submitted' && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  UPC <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={statusUpdateFields.upc || ''}
-                  onChange={(e) => setStatusUpdateFields({ ...statusUpdateFields, upc: e.target.value })}
-                  placeholder="Enter UPC"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    UPC <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={statusUpdateFields.upc || ''}
+                    onChange={(e) => setStatusUpdateFields({ ...statusUpdateFields, upc: e.target.value })}
+                    placeholder="Enter UPC"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                
+                {/* Upload Cover Art */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Cover Art
+                  </label>
+                  {statusCoverPreview ? (
+                    <div className="flex items-center gap-4 p-3 border border-border rounded-lg bg-background/50">
+                      <div className="relative w-16 h-16 rounded overflow-hidden border border-border flex-shrink-0">
+                        <img src={statusCoverPreview} alt="Cover preview" className="w-full h-full object-cover" />
+                        {isStatusUploading && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        {statusUpdateFields.coverArt && !isStatusUploading ? (
+                          <p className="text-[10px] text-green-500 flex items-center gap-1 mb-1 font-bold"><Check className="w-3 h-3" /> Uploaded successfully</p>
+                        ) : isStatusUploading ? (
+                          <p className="text-[10px] text-muted-foreground mb-1">Uploading...</p>
+                        ) : null}
+                        <button type="button" onClick={removeStatusCover} className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1" disabled={isStatusUploading}>
+                          <X className="w-3 h-3" /> Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div
+                        onClick={() => statusFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-border hover:border-accent/50 hover:bg-accent/5 rounded-xl p-4 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all duration-200"
+                      >
+                        <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">
+                          <span className="text-accent font-medium">Click to upload cover art</span>
+                        </p>
+                      </div>
+                      {statusUploadError && (
+                        <p className="text-[10px] text-red-400 mt-1 font-semibold">{statusUploadError}</p>
+                      )}
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    ref={statusFileInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleStatusFileSelect(file);
+                    }}
+                    className="hidden"
+                    accept="image/jpeg,image/png"
+                    disabled={isStatusUploading}
+                  />
+                </div>
               </div>
             )}
             {statusUpdateData?.newStatus === 'approved' && (

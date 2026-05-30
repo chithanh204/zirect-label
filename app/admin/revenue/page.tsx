@@ -36,6 +36,7 @@ export default function AdminRevenuePage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
+  const [paymentMonth, setPaymentMonth] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Artist Payout states
@@ -116,14 +117,23 @@ export default function AdminRevenuePage() {
 
   const handleImportSubmit = async () => {
     if (!excelFile) return;
+    if (!paymentMonth) {
+      toast({
+        title: 'Month Required',
+        description: 'Please select the payment/billing month for this revenue report.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       setIsUploading(true);
       setImportResult(null);
-      const res = await apiClient.importRevenueExcel(excelFile) as any;
+      const res = await apiClient.importRevenueExcel(excelFile, paymentMonth) as any;
       if (res && res.success) {
         setImportResult(res.data);
         setExcelFile(null);
+        setPaymentMonth('');
         toast({
           title: 'Import Successful!',
           description: `Distributed revenue for ${res.data.processedRows} tracks from report.`,
@@ -295,6 +305,7 @@ export default function AdminRevenuePage() {
                 onClick={() => {
                   setImportResult(null);
                   setExcelFile(null);
+                  setPaymentMonth('');
                   setIsImportModalOpen(true);
                 }}
                 className="bg-accent text-accent-foreground hover:bg-accent/90 neon-glow-sm font-semibold flex items-center gap-2"
@@ -459,7 +470,21 @@ export default function AdminRevenuePage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* File Upload Zone */}
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 space-y-4">
+                    {/* Month Picker */}
+                    <div>
+                      <label className="text-xs font-semibold mb-1.5 block text-muted-foreground">
+                        Select Payment/Billing Month <span className="text-accent">*</span>
+                      </label>
+                      <Input
+                        type="month"
+                        required
+                        value={paymentMonth}
+                        onChange={(e) => setPaymentMonth(e.target.value)}
+                        className="bg-[rgba(8,20,45,0.4)] border-accent/15 focus:border-accent/40 text-sm w-full"
+                      />
+                    </div>
+
                     <div
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
