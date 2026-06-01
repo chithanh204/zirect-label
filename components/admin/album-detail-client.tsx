@@ -1001,7 +1001,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
         </Link>
         <div>
           <h1 className="text-3xl font-bold tracking-tighter">Album Details</h1>
-          <p className="text-muted-foreground mt-1">Metadata and revenue splits.</p>
         </div>
       </div>
 
@@ -1055,7 +1054,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="font-bold text-lg">Album Metadata</h3>
-                <p className="text-sm text-muted-foreground">Edit album information and track details. Metadata on this page is the source of truth.</p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -1371,7 +1369,6 @@ export function AlbumDetailClient({ albumId }: { albumId: string }) {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="font-bold text-lg">Revenue Splits & Payout Management</h3>
-                <p className="text-sm text-muted-foreground">Set each artist's revenue split percentage and update their payment details.</p>
               </div>
               <Button onClick={handleSaveSplits} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 <Check className="w-4 h-4 mr-2" /> Save Splits

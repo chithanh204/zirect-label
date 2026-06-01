@@ -7,15 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { apiClient } from '@/lib/api';
-import { 
-  Upload, 
-  FileSpreadsheet, 
-  CheckCircle, 
-  DollarSign, 
-  Copy, 
-  Check, 
-  ArrowRight, 
-  Coins, 
+import {
+  Upload,
+  FileSpreadsheet,
+  CheckCircle,
+  DollarSign,
+  Copy,
+  Check,
+  ArrowRight,
+  Coins,
   CreditCard,
   Image as ImageIcon,
   CheckCircle2,
@@ -26,7 +26,7 @@ import {
 
 export default function AdminRevenuePage() {
   const { toast } = useToast();
-  
+
   // Modal states
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
@@ -43,7 +43,7 @@ export default function AdminRevenuePage() {
   const [artists, setArtists] = useState<any[]>([]);
   const [isLoadingArtists, setIsLoadingArtists] = useState(false);
   const [selectedArtist, setSelectedArtist] = useState<any | null>(null);
-  
+
   // Payout details states
   const [unpaidAlbums, setUnpaidAlbums] = useState<any[]>([]);
   const [isLoadingAlbums, setIsLoadingAlbums] = useState(false);
@@ -158,7 +158,7 @@ export default function AdminRevenuePage() {
     setIsPayoutModalOpen(true);
     setUnpaidAlbums([]);
     setPayoutForm({ transactionId: '', note: '', receiptUrl: '' });
-    
+
     try {
       setIsLoadingAlbums(true);
       const res = await apiClient.getArtistUnpaidAlbums(artist.id) as any;
@@ -297,9 +297,6 @@ export default function AdminRevenuePage() {
                 <h1 className="text-4xl font-bold tracking-tighter">
                   Artist <span className="gradient-text-cyan">Payments & Revenue</span>
                 </h1>
-                <p className="text-muted-foreground mt-2">
-                  Verify artist PayPal details, parse revenue reports, and process manual payouts.
-                </p>
               </div>
               <Button
                 onClick={() => {
@@ -370,11 +367,10 @@ export default function AdminRevenuePage() {
                           {/* Verification Status */}
                           <td className="px-6 py-4 text-center">
                             {artist.paypalAccount ? (
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                artist.paymentVerificationStatus === 'verified'
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${artist.paymentVerificationStatus === 'verified'
                                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                                   : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                              }`}>
+                                }`}>
                                 {artist.paymentVerificationStatus === 'verified' ? 'Verified' : 'Pending Approval'}
                               </span>
                             ) : (
@@ -424,7 +420,7 @@ export default function AdminRevenuePage() {
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setIsImportModalOpen(false)} />
-          
+
           <div className="glass rounded-2xl w-full max-w-2xl overflow-hidden border border-accent/20 relative z-10 neon-border animate-in scale-in duration-200 flex flex-col">
             <div className="px-6 py-5 border-b border-accent/15 flex items-center justify-between bg-[rgba(8,20,45,0.4)]">
               <div>
@@ -441,7 +437,7 @@ export default function AdminRevenuePage() {
                     <CheckCircle className="w-8 h-8" />
                     <h4 className="text-lg font-bold">Report Parsed & Distributed Successfully!</h4>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="glass-card rounded-lg p-4">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Rows Processed</p>
@@ -489,11 +485,10 @@ export default function AdminRevenuePage() {
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      className={`border-2 border-dashed rounded-xl p-8 text-center transition-all flex flex-col items-center justify-center min-h-[220px] ${
-                        isDragging 
-                          ? 'border-accent bg-accent/5 neon-border' 
+                      className={`border-2 border-dashed rounded-xl p-8 text-center transition-all flex flex-col items-center justify-center min-h-[220px] ${isDragging
+                          ? 'border-accent bg-accent/5 neon-border'
                           : 'border-accent/25 bg-[rgba(8,20,45,0.2)] hover:border-accent/40'
-                      }`}
+                        }`}
                     >
                       <input
                         type="file"
@@ -502,7 +497,7 @@ export default function AdminRevenuePage() {
                         accept=".xlsx, .xls"
                         className="hidden"
                       />
-                      
+
                       <div className="w-12 h-12 bg-accent/10 border border-accent/20 rounded-full flex items-center justify-center mb-4 text-accent">
                         <Upload className="w-6 h-6" />
                       </div>
@@ -517,14 +512,14 @@ export default function AdminRevenuePage() {
                             {(excelFile.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                           <div className="flex justify-center gap-2 pt-2">
-                            <Button 
+                            <Button
                               variant="outline"
                               onClick={() => setExcelFile(null)}
                               className="border-accent/20 hover:bg-accent/5 text-foreground h-8 text-xs"
                             >
                               Cancel
                             </Button>
-                            <Button 
+                            <Button
                               onClick={handleImportSubmit}
                               disabled={isUploading}
                               className="bg-accent text-accent-foreground hover:bg-accent/90 px-4 h-8 text-xs neon-glow-sm"
@@ -540,7 +535,7 @@ export default function AdminRevenuePage() {
                             Or browse files from your computer (.xlsx, .xls)
                           </p>
                           <div className="pt-4">
-                            <Button 
+                            <Button
                               onClick={() => fileInputRef.current?.click()}
                               className="bg-accent/10 border border-accent/20 hover:bg-accent/20 text-foreground text-xs px-4 h-8"
                             >
@@ -584,7 +579,7 @@ export default function AdminRevenuePage() {
       {isPayoutModalOpen && selectedArtist && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setIsPayoutModalOpen(false)} />
-          
+
           <div className="glass rounded-2xl w-full max-w-3xl overflow-hidden border border-accent/20 relative z-10 neon-border animate-in scale-in duration-200 flex flex-col max-h-[90vh]">
             <div className="px-6 py-5 border-b border-accent/15 flex items-center justify-between bg-[rgba(8,20,45,0.4)]">
               <div>
@@ -700,7 +695,7 @@ export default function AdminRevenuePage() {
                       accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                     />
-                    
+
                     {payoutForm.receiptUrl ? (
                       <div className="flex items-center justify-between gap-2 bg-emerald-500/5 border border-emerald-500/20 px-3 py-2 rounded-lg text-xs">
                         <span className="flex items-center gap-1.5 text-emerald-400 font-bold">

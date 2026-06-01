@@ -120,7 +120,6 @@ export default function AdminReportsPage() {
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
                 <h1 className="text-4xl font-bold tracking-tighter">Label <span className="gradient-text-cyan">Reports</span></h1>
-                <p className="text-muted-foreground mt-2">Access key metadata logs, copyright flags, release queues, and artist contract submissions.</p>
               </div>
               <Button
                 variant="outline"
@@ -171,7 +170,6 @@ export default function AdminReportsPage() {
                       <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 pb-4">
                         <div>
                           <CardTitle className="text-xl">Artist Contract Inquiries</CardTitle>
-                          <CardDescription>Demo submissions received from the label home page.</CardDescription>
                         </div>
                         <div className="flex gap-1.5 self-start">
                           {(['all', 'new', 'reviewed'] as const).map((filter) => (
@@ -265,7 +263,6 @@ export default function AdminReportsPage() {
                             <AlertTriangle className="w-5 h-5 text-destructive" />
                             Copyright Flags & Infringements
                           </CardTitle>
-                          <CardDescription>Track streams flagged by distributors or platform filters.</CardDescription>
                         </CardHeader>
                         <CardContent>
                           {copyrightFlags.length === 0 ? (
@@ -320,9 +317,6 @@ export default function AdminReportsPage() {
                             <Music className="w-5 h-5 text-accent animate-pulse" />
                             Spotify Live Sync Discrepancies
                           </CardTitle>
-                          <CardDescription>
-                            Comparison between local album details and real-time Spotify platform metadata. Mismatched fields are highlighted in glowing neon indicators.
-                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           {spotifyDiscrepancies.length === 0 ? (
@@ -418,7 +412,6 @@ export default function AdminReportsPage() {
                             <LinkIcon className="w-5 h-5 text-accent" />
                             Missing Distribution IDs
                           </CardTitle>
-                          <CardDescription>Albums marked as distributed but missing Spotify or YouTube album IDs.</CardDescription>
                         </CardHeader>
                         <CardContent>
                           {missingLinks.length === 0 ? (
@@ -480,7 +473,6 @@ export default function AdminReportsPage() {
                           <Calendar className="w-5 h-5 text-accent" />
                           Upcoming Release Schedule
                         </CardTitle>
-                        <CardDescription>Submitted or approved albums scheduled for global distribution release.</CardDescription>
                       </CardHeader>
                       <CardContent>
                         {releaseSchedule.length === 0 ? (

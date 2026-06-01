@@ -30,11 +30,6 @@ export function HeroSection() {
           </span>
         </h1>
 
-        {/* Subheading */}
-        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Zirect Label connects independent artists with global audiences. A dark, powerful phonk beat. A vibrant Brazilian funk groove. Or maybe an unexpected hook that takes over the internet overnight. The spark is yours — the reach is ours.
-        </p>
-
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <Link href="/contact">
@@ -53,16 +48,16 @@ export function HeroSection() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 pt-12 sm:pt-16">
           <div className="space-y-1 glass-card rounded-xl p-4 sm:p-6">
-            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">500+</div>
-            <div className="text-sm text-muted-foreground">Artists</div>
+            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">100+</div>
+            <div className="text-sm text-muted-foreground">Playlists</div>
           </div>
           <div className="space-y-1 glass-card rounded-xl p-4 sm:p-6">
-            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">2.5M+</div>
+            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">5M+</div>
             <div className="text-sm text-muted-foreground">Streams</div>
           </div>
           <div className="space-y-1 glass-card rounded-xl p-4 sm:p-6">
-            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">$500K+</div>
-            <div className="text-sm text-muted-foreground">Paid Out</div>
+            <div className="text-2xl sm:text-3xl font-bold gradient-text-cyan">24/7</div>
+            <div className="text-sm text-muted-foreground">Discovery</div>
           </div>
         </div>
       </div>

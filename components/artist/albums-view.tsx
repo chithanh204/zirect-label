@@ -19,19 +19,32 @@ export function AlbumsView() {
   const fetchAlbums = async () => {
     try {
       setLoading(true);
+      setError(null);
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      if (!token) {
+        setError('Please login to view your albums');
+        setLoading(false);
+        return;
+      }
+
       const [albumsRes, profileRes] = await Promise.all([
-        apiClient.getMyAlbums() as any,
-        apiClient.getMyArtistProfile() as any
+        apiClient.getMyAlbums(token) as any,
+        apiClient.getMyArtistProfile(token) as any
       ]);
 
       if (albumsRes?.success) {
         setAlbums(albumsRes.data || []);
+      } else {
+        setError(albumsRes?.message || 'Failed to load albums');
       }
+
       if (profileRes?.success) {
         setProfile(profileRes.data);
       }
-    } catch (err) {
-      setError('Failed to load albums');
+    } catch (err: any) {
+      console.error('Error fetching artist albums:', err);
+      setError(err.message || 'Failed to connect to the server');
     } finally {
       setLoading(false);
     }
@@ -68,7 +81,7 @@ export function AlbumsView() {
       {albums.map((album) => {
         // Calculate total revenue from all platforms for this album
         const albumPlatformRevenue = album.platformRevenues?.reduce((sum: number, r: any) => sum + r.totalRevenue, 0) || 0;
-        
+
         // Find the artist's split percentage for this album
         let artistShare = 100;
         if (album.revenueSplits && album.revenueSplits.length > 0) {
@@ -79,7 +92,7 @@ export function AlbumsView() {
             artistShare = 0;
           }
         }
-        
+
         const artistAlbumRevenue = albumPlatformRevenue * (artistShare / 100);
 
         return (
@@ -94,7 +107,7 @@ export function AlbumsView() {
                     <Music className="w-16 h-16 text-accent/40" />
                   </div>
                 )}
-                
+
                 <div className="flex-1 space-y-4">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">{album.title}</h2>
@@ -150,11 +163,10 @@ export function AlbumsView() {
               </Card>
               <Card className="glass-card p-4">
                 <p className="text-sm text-muted-foreground mb-1">Status</p>
-                <p className={`text-sm font-bold px-2 py-1 rounded w-fit uppercase ${
-                  album.status === 'distributed' ? 'bg-green-500/20 text-green-500' :
-                  album.status === 'draft' ? 'bg-gray-500/20 text-gray-400' :
-                  'bg-yellow-500/20 text-yellow-500'
-                }`}>
+                <p className={`text-sm font-bold px-2 py-1 rounded w-fit uppercase ${album.status === 'distributed' ? 'bg-green-500/20 text-green-500' :
+                    album.status === 'draft' ? 'bg-gray-500/20 text-gray-400' :
+                      'bg-yellow-500/20 text-yellow-500'
+                  }`}>
                   {album.status === 'draft' ? 'MAKING COVER ART' : album.status.replace(/_/g, ' ')}
                 </p>
               </Card>
@@ -180,7 +192,7 @@ export function AlbumsView() {
                           <Music className="w-5 h-5 text-accent/40" />
                         </div>
                       )}
-                      
+
                       <div className="flex-1 min-w-0">
                         <p className="font-bold truncate">{track.title}</p>
                         <p className="text-xs text-muted-foreground font-mono">{track.isrc || 'ISRC Pending'}</p>

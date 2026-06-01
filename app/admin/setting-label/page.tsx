@@ -23,7 +23,7 @@ interface FeaturedRelease {
 
 export default function SettingLabelPage() {
   const { toast } = useToast();
-  
+
   // Home Page branding states
   const [logoUrl, setLogoUrl] = useState('');
   const [title, setTitle] = useState('');
@@ -39,7 +39,7 @@ export default function SettingLabelPage() {
   // Featured Releases states
   const [releases, setReleases] = useState<FeaturedRelease[]>([]);
   const [loadingReleases, setLoadingReleases] = useState(true);
-  
+
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRelease, setEditingRelease] = useState<FeaturedRelease | null>(null);
@@ -183,7 +183,7 @@ export default function SettingLabelPage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (newPassword !== confirmPassword) {
       toast({
         title: 'Validation Error',
@@ -206,7 +206,7 @@ export default function SettingLabelPage() {
       setChangingPassword(true);
       const token = localStorage.getItem('authToken') || undefined;
       const res: any = await apiClient.updatePassword({ currentPassword, newPassword }, token);
-      
+
       if (res && res.success) {
         toast({
           title: 'Password Updated',
@@ -370,7 +370,6 @@ export default function SettingLabelPage() {
             {/* Header */}
             <div>
               <h1 className="text-4xl font-bold tracking-tighter">Setting <span className="gradient-text-cyan">Label</span></h1>
-              <p className="text-muted-foreground mt-2">Manage your public website branding, brand settings, and admin account security.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -380,7 +379,6 @@ export default function SettingLabelPage() {
                 <Card className="glass shadow-xl border-accent/15">
                   <CardHeader>
                     <CardTitle className="text-xl">Website Branding</CardTitle>
-                    <CardDescription>Logo and general text metadata.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleSaveConfig} className="space-y-6">
@@ -408,7 +406,7 @@ export default function SettingLabelPage() {
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="flex-1">
                             <label className="relative flex flex-col items-center justify-center px-4 py-3 rounded-lg border border-dashed border-accent/20 bg-accent/5 hover:border-accent/40 hover:bg-accent/10 cursor-pointer transition-all">
                               <span className="text-xs font-medium text-accent flex items-center gap-1.5">
@@ -468,7 +466,6 @@ export default function SettingLabelPage() {
                       <KeyRound className="w-5 h-5 text-accent" />
                       <CardTitle className="text-xl">Admin Security</CardTitle>
                     </div>
-                    <CardDescription>Update your administrator password.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleChangePassword} className="space-y-4">
@@ -526,7 +523,6 @@ export default function SettingLabelPage() {
                   <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-4">
                     <div>
                       <CardTitle className="text-xl">Featured Releases Grid</CardTitle>
-                      <CardDescription>Grid of up to 15 highlighted songs with links.</CardDescription>
                     </div>
                     <Button
                       onClick={handleOpenAddDialog}
@@ -683,7 +679,7 @@ export default function SettingLabelPage() {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="flex-1">
                   <label className="relative flex flex-col items-center justify-center px-4 py-2.5 rounded-lg border border-dashed border-accent/20 bg-accent/5 hover:border-accent/40 hover:bg-accent/10 cursor-pointer transition-all">
                     <span className="text-xs font-medium text-accent flex items-center gap-1.5">

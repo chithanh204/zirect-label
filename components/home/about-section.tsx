@@ -73,32 +73,6 @@ export function AboutSection() {
             })}
           </div>
         </div>
-
-        {/* Timeline */}
-        <div className="space-y-8">
-          <h3 className="text-2xl font-bold">Our <span className="gradient-text-cyan">Journey</span></h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[
-              { year: '2023', title: 'Founded', desc: 'Zirect Label launched' },
-              { year: '2023', title: '500+ Artists', desc: 'Reached milestone' },
-              { year: '2024', title: '2.5M Streams', desc: 'Collective achievement' },
-              { year: '2024', title: '$500K Paid', desc: 'To our artists' }
-            ].map((item, idx) => (
-              <div key={idx} className="relative pb-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-accent/15 border border-accent/25 rounded-full flex items-center justify-center text-accent font-bold flex-shrink-0">
-                    {idx + 1}
-                  </div>
-                  <div>
-                    <div className="text-sm text-accent font-bold">{item.year}</div>
-                    <h4 className="font-bold text-lg">{item.title}</h4>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

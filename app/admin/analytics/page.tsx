@@ -168,7 +168,6 @@ export default function AdminAnalyticsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-4xl font-bold tracking-tighter">Admin <span className="gradient-text-cyan">Analytics</span></h1>
-                <p className="text-muted-foreground mt-2">Comprehensive reports on label distribution streams, platform earnings, and trending releases.</p>
               </div>
               <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-accent/20 bg-accent/5 w-fit h-fit text-accent">
                 System Active
@@ -181,7 +180,6 @@ export default function AdminAnalyticsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-xl">Monthly Revenue Flows</CardTitle>
-                    <CardDescription>Visual chart overview of catalog earnings imported monthly.</CardDescription>
                   </div>
                   <span className="text-xs text-muted-foreground font-medium bg-accent/5 border border-accent/10 px-2.5 py-1 rounded">
                     Recharts Analytics Active
@@ -251,7 +249,6 @@ export default function AdminAnalyticsPage() {
                     <div>
                       <p className="text-sm text-muted-foreground font-medium group-hover:text-emerald-300 transition-colors">Total Revenue</p>
                       <p className="text-3xl font-extrabold tracking-tight mt-2 text-foreground">{formatCurrency(totalRevenue)}</p>
-                      <p className="text-xs text-muted-foreground mt-2">Aggregated earnings across all releases</p>
                     </div>
                     <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
                       <DollarSign className="w-6 h-6" />
@@ -271,7 +268,6 @@ export default function AdminAnalyticsPage() {
                       <Award className="w-5 h-5 text-accent" />
                       Top Profitable Albums
                     </CardTitle>
-                    <CardDescription>Albums generating the highest yields.</CardDescription>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-accent/20 bg-accent/5 uppercase text-accent">
                     Revenue-Ranked
@@ -290,9 +286,9 @@ export default function AdminAnalyticsPage() {
                           <div className="flex items-center gap-3 min-w-0">
                             {/* Rank Badge */}
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${index === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                                index === 1 ? 'bg-zinc-300/20 text-zinc-300 border border-zinc-400/30' :
-                                  index === 2 ? 'bg-orange-700/20 text-orange-400 border border-orange-700/30' :
-                                    'bg-accent/5 text-muted-foreground border border-accent/10'
+                              index === 1 ? 'bg-zinc-300/20 text-zinc-300 border border-zinc-400/30' :
+                                index === 2 ? 'bg-orange-700/20 text-orange-400 border border-orange-700/30' :
+                                  'bg-accent/5 text-muted-foreground border border-accent/10'
                               }`}>
                               {index + 1}
                             </span>
@@ -331,7 +327,6 @@ export default function AdminAnalyticsPage() {
                       <Flame className="w-5 h-5 text-[#1DB954]" />
                       Trending Releases
                     </CardTitle>
-                    <CardDescription>Popular tracks on Spotify resolved dynamically.</CardDescription>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-[#1DB954]/20 bg-[#1DB954]/5 uppercase text-[#1DB954]">
                     Spotify Popularity
